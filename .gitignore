@@ -33,3 +33,9 @@ desktop.ini
 .pytest_cache/
 .superpowers/
 scratch/
+
+# Next.js and Node dependencies
+**/node_modules/
+**/.next/
+web/out/
+web/.next/
