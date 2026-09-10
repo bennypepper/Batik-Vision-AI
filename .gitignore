@@ -28,3 +28,8 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
+
+# Testing & Scratch
+.pytest_cache/
+.superpowers/
+scratch/
