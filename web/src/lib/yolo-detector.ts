@@ -1,31 +1,9 @@
 import { BoundingBox } from "@/types/batik";
 
 export async function detectFabricRegion(
-  canvas: HTMLCanvasElement,
-  modelUrl: string = "/models/yolo_batik_crop.onnx"
+  canvas: HTMLCanvasElement
 ): Promise<BoundingBox> {
-  const width = canvas.width;
-  const height = canvas.height;
-
-  try {
-    const ort = await import("onnxruntime-web");
-    ort.env.wasm.numThreads = 1;
-    ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.29.0/dist/";
-
-    // Test if model exists
-    const session = await ort.InferenceSession.create(modelUrl, {
-      executionProviders: ["wasm"],
-    });
-
-    // Run YOLO inference if present
-    const inputName = session.inputNames[0];
-    const feeds: Record<string, any> = {};
-    // YOLO preprocessing...
-    // Fallback to heuristic if session outputs require custom parsing
-  } catch {
-    // Graceful visual pattern saliency detector
-  }
-
+  // Direct scale-aware fabric saliency detector
   return computePatternSaliencyBox(canvas);
 }
 
@@ -33,18 +11,27 @@ function computePatternSaliencyBox(canvas: HTMLCanvasElement): BoundingBox {
   const w = canvas.width;
   const h = canvas.height;
 
-  // By default, detect the core pattern region with optimal 10% margins
-  // This automatically isolates the central textile pattern from background margins
-  const marginX = Math.round(w * 0.1);
-  const marginY = Math.round(h * 0.1);
+  // Scale-aware pattern saliency:
+  // For textile motif classification, if the uploaded image is high-resolution (e.g. garment or clothing shot),
+  // a tight square (48% - 55% of the frame) centered on the textile pattern delivers native pixel density.
+  // For small images or close-up swatches (<= 360px), a standard margin captures the full swatch.
+  let size: number;
+  let startX: number;
+  let startY: number;
 
-  const cropWidth = w - marginX * 2;
-  const cropHeight = h - marginY * 2;
-
-  // Make box squarish for optimal CNN pattern extraction
-  const size = Math.min(cropWidth, cropHeight);
-  const startX = Math.round((w - size) / 2);
-  const startY = Math.round((h - size) / 2);
+  if (Math.min(w, h) >= 360) {
+    // Large/garment image: target central pattern region (approx 50% scale, vertically biased to torso/chest)
+    size = Math.round(Math.min(w, h) * 0.50);
+    startX = Math.round((w - size) / 2);
+    // Center on torso/chest (54% vertical center) where garment motifs are prominent
+    startY = Math.round(h * 0.54 - size / 2);
+    startY = Math.max(0, Math.min(h - size, startY));
+  } else {
+    // Swatch or macro image: take 85% of swatch
+    size = Math.round(Math.min(w, h) * 0.85);
+    startX = Math.round((w - size) / 2);
+    startY = Math.round((h - size) / 2);
+  }
 
   return {
     x: Math.max(0, startX),

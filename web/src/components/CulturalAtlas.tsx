@@ -58,6 +58,19 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
     }
   }, [initialQuery, allMotifs]);
 
+  // Close contemplation modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedModalMotif(null);
+      }
+    };
+    if (selectedModalMotif) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [selectedModalMotif]);
+
   const filteredMotifs = useMemo(() => {
     return allMotifs.filter((m) => {
       // Island filter
@@ -252,7 +265,16 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
 
       {/* Modal Dialog: Full Cultural Philosophy & High-Resolution Swatch */}
       {selectedModalMotif && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedModalMotif(null);
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[var(--cloth-line)] flex flex-col">
             {/* Modal Image Header */}
             <div className="relative w-full h-64 sm:h-72 bg-black shrink-0">

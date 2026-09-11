@@ -27,6 +27,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [initialBox, setInitialBox] = useState<BoundingBox | null>(null);
+  const [naturalDimensions, setNaturalDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [isManualCropping, setIsManualCropping] = useState(false);
   const [status, setStatus] = useState<"idle" | "detecting" | "cropping" | "classifying" | "done">("idle");
   const [predictions, setPredictions] = useState<PredictionResult[] | null>(null);
@@ -117,9 +118,12 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
 
     const img = new Image();
     const handleLoaded = async () => {
+      const nW = img.naturalWidth || 640;
+      const nH = img.naturalHeight || 640;
+      setNaturalDimensions({ width: nW, height: nH });
       const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth || 640;
-      canvas.height = img.naturalHeight || 640;
+      canvas.width = nW;
+      canvas.height = nH;
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(img, 0, 0);
@@ -138,11 +142,14 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
   };
 
   const executeClassificationOnBox = async (boxToCrop?: BoundingBox | null) => {
-    if (!imageSrc) return;
+    if (!imageSrc || status === "classifying") return;
     setStatus("classifying");
 
     const img = new Image();
+    let executed = false;
     const runInference = async () => {
+      if (executed) return;
+      executed = true;
       const box = boxToCrop || {
         x: 0,
         y: 0,
@@ -431,18 +438,24 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
             />
             {/* Simulated / Real YOLO bounding box */}
             <div
-              className="absolute border-2 border-dashed border-[var(--soga)] rounded pointer-events-none"
+              className="absolute border-2 border-dashed border-[var(--soga)] rounded pointer-events-none transition-all duration-300"
               style={{
-                left: `${(initialBox.x / (initialBox.width + initialBox.x * 2 || 1)) * 100}%`,
-                top: `${(initialBox.y / (initialBox.height + initialBox.y * 2 || 1)) * 100}%`,
-                width: `${(initialBox.width / (initialBox.width + initialBox.x * 2 || 1)) * 100}%`,
-                height: `${(initialBox.height / (initialBox.height + initialBox.y * 2 || 1)) * 100}%`,
+                left: `${(initialBox.x / (naturalDimensions.width || 1)) * 100}%`,
+                top: `${(initialBox.y / (naturalDimensions.height || 1)) * 100}%`,
+                width: `${(initialBox.width / (naturalDimensions.width || 1)) * 100}%`,
+                height: `${(initialBox.height / (naturalDimensions.height || 1)) * 100}%`,
               }}
             >
               <span className="absolute -top-6 left-0 bg-[var(--soga)] text-white text-[10.5px] font-semibold px-2 py-0.5 rounded-t whitespace-nowrap shadow">
                 {t(language, "fabric_detected")} · {(initialBox.confidence * 100).toFixed(0)}%
               </span>
             </div>
+          </div>
+
+          {/* Framing Guidance Hint */}
+          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--cloth-deep)] border border-[var(--cloth-line)] text-[12.5px] text-[var(--on-cloth-soft)]">
+            <Crop className="w-4 h-4 text-[var(--soga)] shrink-0" />
+            <span>{t(language, "framing_hint")}</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
@@ -456,10 +469,10 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => setIsManualCropping(true)}
-                className="bg-transparent border border-[var(--canvas-line-strong)] text-[var(--on-canvas-soft)] hover:text-[var(--on-canvas)] text-xs font-medium px-3.5 py-2 rounded-md transition flex items-center gap-1.5 cursor-pointer"
+                className="bg-transparent border border-[var(--canvas-line-strong)] text-[var(--on-canvas)] hover:border-[var(--soga)] text-xs font-medium px-3.5 py-2 rounded-md transition flex items-center gap-1.5 cursor-pointer"
               >
-                <Crop className="w-3.5 h-3.5" />
-                <span>{t(language, "stage1_label")}</span>
+                <Crop className="w-3.5 h-3.5 text-[var(--soga)]" />
+                <span>{t(language, "btn_adjust_roi")}</span>
               </button>
 
               <button
