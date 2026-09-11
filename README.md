@@ -50,7 +50,7 @@ Minority classes (such as Priangan Merak Ngibing and Sogan) suffered from high e
 Rather than forcing raw uncurated photographs directly into a texture classifier, Stage 1 uses YOLO fabric detection to isolate textile regions and calculate border spatial gradient energy. Close-up fabric swatches are automatically framed at 100% full pattern, while garments on models or mannequins default to 50% central focus with manual ROI fine-tuning capabilities.
 
 ### 5. Client-Side WebAssembly Execution
-The trained EfficientNetV2S model is exported to ONNX format with FP16 weights (`batik_v3_classifier.onnx`) and evaluated directly inside the browser using ONNX Runtime Web. User photos are never uploaded to remote servers, eliminating hosting infrastructure costs and ensuring data privacy.
+The trained EfficientNetV2S model is exported to ONNX format with FP16 weights (`batik_model_v3.onnx`) and evaluated directly inside the browser using ONNX Runtime Web. User photos are never uploaded to remote servers, eliminating hosting infrastructure costs and ensuring data privacy.
 
 ## Supported Batik Motifs (28 Classes)
 
@@ -91,7 +91,7 @@ The trained EfficientNetV2S model is exported to ONNX format with FP16 weights (
 Batik-Vision-AI/
 ├── web/                             # Production Next.js 16 client application
 │   ├── public/
-│   │   ├── models/                  # ONNX runtime models (batik_v3_classifier.onnx)
+│   │   ├── models/                  # ONNX runtime models (batik_model_v3.onnx)
 │   │   └── motifs/                  # Exemplar motif swatch imagery
 │   ├── src/
 │   │   ├── app/                     # Next.js layout and entrypage
