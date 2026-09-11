@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { BatikClass, AppLanguage } from "@/types/batik";
 import { getAllMotifs, getMotifRegion, getMotifIsland, getIslandOptions } from "@/lib/labels-data";
 import { t } from "@/lib/i18n";
-import { Search, MapPin, ChevronDown, ChevronUp, X, Sparkles, AlertTriangle } from "lucide-react";
+import { Search, MapPin, ArrowRight, X, Sparkles, AlertTriangle } from "lucide-react";
 
 interface CulturalAtlasProps {
   language: AppLanguage;
@@ -17,7 +17,6 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState(initialQuery || "");
   const [selectedIsland, setSelectedIsland] = useState<string>("ALL");
-  const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({});
   const [flashedId, setFlashedId] = useState<number | null>(null);
   const [selectedModalMotif, setSelectedModalMotif] = useState<BatikClass | null>(null);
 
@@ -88,12 +87,6 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
     });
   }, [allMotifs, selectedIsland, searchQuery, language]);
 
-  const toggleExpand = (id: number) => {
-    setExpandedIds((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
 
   return (
     <div className="w-full space-y-8 pb-16">
@@ -167,7 +160,6 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
         {filteredMotifs.map((motif) => {
           const name = language === "id" ? motif.name_id : motif.name_en;
           const fullDesc = language === "id" ? motif.description_id : motif.description_en;
-          const isExpanded = !!expandedIds[motif.id];
           const isFlashed = flashedId === motif.id;
 
           // Curatorial rarity: Lasem is genuine cultural rarity
@@ -199,7 +191,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
                   <span className="text-white text-[11.5px] font-medium bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded">
-                    {t(language, "view_full_modal")}
+                    {t(language, "read_full_philosophy")}
                   </span>
                   <Sparkles className="w-4 h-4 text-amber-200" />
                 </div>
@@ -222,66 +214,34 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                     </h3>
                   </div>
 
-                  <div className="text-[12px] text-[var(--on-cloth-faint)] flex items-center gap-1 mb-3">
+                  <div className="text-[12px] text-[var(--on-cloth-faint)] flex items-center gap-1 mb-2.5">
                     <MapPin className="w-3.5 h-3.5 text-[var(--soga)] shrink-0" />
                     <span className="truncate">
                       {getMotifRegion(motif, language)} · {getMotifIsland(motif, language)}
                     </span>
                   </div>
 
-                  {/* Summary (Collapsed View) */}
-                  {!isExpanded && (
-                    <p className="text-[12.5px] text-[var(--on-cloth-soft)] leading-relaxed line-clamp-3 mb-3">
-                      {fullDesc}
-                    </p>
-                  )}
+                  {/* Clean 3-line description preview */}
+                  <p className="text-[12.5px] text-[var(--on-cloth-soft)] leading-relaxed line-clamp-3 mb-3">
+                    {fullDesc}
+                  </p>
 
-                  {/* Deep Philosophy Panel (Expanded View) */}
-                  {isExpanded && (
-                    <div className="space-y-3 mb-3 pt-2.5 border-t border-[var(--cloth-line)]">
-                      <div>
-                        <span className="text-[10.5px] uppercase font-bold tracking-wider text-[var(--soga)] block mb-1">
-                          {t(language, "deep_philosophy")}
-                        </span>
-                        <p className="text-[12.5px] text-[var(--on-cloth-soft)] leading-relaxed italic bg-[var(--cloth-deep)] p-3 rounded-lg border border-[var(--cloth-line)]">
-                          &ldquo;{fullDesc}&rdquo;
-                        </p>
-                      </div>
-
-                      <div>
-                        <span className="text-[10.5px] uppercase font-bold tracking-wider text-[var(--on-cloth-faint)] block mb-1">
-                          {t(language, "cultural_provenance")}
-                        </span>
-                        <p className="text-[12px] text-[var(--on-cloth-soft)]">
-                          {getMotifRegion(motif, language)} ({getMotifIsland(motif, language)})
-                        </p>
-                      </div>
-
-                      {isModelWeak && (
-                        <div className="flex items-center gap-1.5 p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px]">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{t(language, "model_weak_note")}</span>
-                        </div>
-                      )}
+                  {isModelWeak && (
+                    <div className="flex items-center gap-1.5 p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] mb-2">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{t(language, "model_weak_note")}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Card Footer Action Controls */}
-                <div className="flex items-center justify-between pt-3 border-t border-[var(--cloth-line)] mt-auto">
-                  <button
-                    onClick={() => toggleExpand(motif.id)}
-                    className="text-[12px] font-semibold text-[var(--soga)] hover:text-[var(--soga-deep)] flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition"
-                  >
-                    <span>{isExpanded ? t(language, "hide_details") : t(language, "view_details")}</span>
-                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-
+                {/* Single, Unambiguous Card Footer Action */}
+                <div className="pt-3 border-t border-[var(--cloth-line)] mt-auto flex items-center justify-between">
                   <button
                     onClick={() => setSelectedModalMotif(motif)}
-                    className="text-[11.5px] text-[var(--on-cloth-faint)] hover:text-[var(--on-cloth)] underline cursor-pointer bg-transparent border-none p-0 transition"
+                    className="text-[12px] font-semibold text-[var(--soga)] hover:text-[var(--soga-deep)] flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0 transition"
                   >
-                    {t(language, "view_full_modal")}
+                    <span>{t(language, "read_full_philosophy")}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -309,53 +269,42 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                 <X className="w-4 h-4" />
               </button>
               <div className="absolute bottom-3.5 left-4">
-                <span className="text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded bg-black/60 backdrop-blur-md text-white">
+                <span className="text-[11.5px] font-medium px-3 py-1 rounded bg-black/60 backdrop-blur-md text-white">
                   {getMotifRegion(selectedModalMotif, language)} · {getMotifIsland(selectedModalMotif, language)}
                 </span>
               </div>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-5">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="display text-2xl font-bold text-[var(--on-cloth)]">
-                  {language === "id" ? selectedModalMotif.name_id : selectedModalMotif.name_en}
-                </h2>
+            <div className="p-6 sm:p-7 space-y-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="display text-2xl sm:text-3xl font-bold text-[var(--on-cloth)] mb-1.5">
+                    {language === "id" ? selectedModalMotif.name_id : selectedModalMotif.name_en}
+                  </h2>
+                  <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--on-cloth-faint)]">
+                    <MapPin className="w-3.5 h-3.5 text-[var(--soga)] shrink-0" />
+                    <span>
+                      {getMotifRegion(selectedModalMotif, language)} · {getMotifIsland(selectedModalMotif, language)}
+                    </span>
+                  </div>
+                </div>
                 {selectedModalMotif.slug === "Lasem" && (
-                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[var(--mahogany)] text-white">
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[var(--mahogany)] text-white shrink-0">
                     {t(language, "rare_badge")}
                   </span>
                 )}
               </div>
 
               <div>
-                <h4 className="text-[12px] uppercase font-bold tracking-wider text-[var(--soga)] mb-2">
+                <h4 className="text-[13px] font-semibold text-[var(--soga)] mb-2">
                   {t(language, "deep_philosophy")}
                 </h4>
-                <p className="text-[14px] text-[var(--on-cloth-soft)] leading-relaxed bg-[var(--cloth-deep)] p-4 rounded-xl border border-[var(--cloth-line)]">
-                  {language === "id"
+                <p className="text-[14px] text-[var(--on-cloth-soft)] leading-relaxed bg-[var(--cloth-deep)] p-4 sm:p-5 rounded-xl border border-[var(--cloth-line)] italic">
+                  &ldquo;{language === "id"
                     ? selectedModalMotif.description_id
-                    : selectedModalMotif.description_en}
+                    : selectedModalMotif.description_en}&rdquo;
                 </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="p-3.5 rounded-lg bg-[var(--cloth-deep)] border border-[var(--cloth-line)]">
-                  <span className="text-[11px] text-[var(--on-cloth-faint)] block mb-1">
-                    {t(language, "region")}
-                  </span>
-                  <span className="text-[13px] font-semibold text-[var(--on-cloth)]">
-                    {getMotifRegion(selectedModalMotif, language)}
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-lg bg-[var(--cloth-deep)] border border-[var(--cloth-line)]">
-                  <span className="text-[11px] text-[var(--on-cloth-faint)] block mb-1">
-                    {t(language, "island")}
-                  </span>
-                  <span className="text-[13px] font-semibold text-[var(--on-cloth)]">
-                    {getMotifIsland(selectedModalMotif, language)}
-                  </span>
-                </div>
               </div>
 
               {(selectedModalMotif.slug === "Priangan_Merak_Ngibing" ||

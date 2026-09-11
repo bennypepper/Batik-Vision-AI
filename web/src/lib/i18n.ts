@@ -56,8 +56,7 @@ export const DICTIONARY = {
     motifs_found: "motif ditemukan",
     rare_badge: "Motif Langka",
     model_weak_note: "akurasi klasifikasi model masih rendah pada motif ini",
-    view_details: "Lihat filosofi lengkap v",
-    hide_details: "Sembunyikan ^",
+    read_full_philosophy: "Baca filosofi lengkap",
     close_modal: "Tutup",
 
     // History
@@ -95,10 +94,9 @@ export const DICTIONARY = {
     theme_light: "Mode Terang (Mori)",
     theme_dark: "Mode Gelap (Wedelan)",
     toggle_theme: "Ganti Tema",
-    view_full_modal: "Buka Detail Penuh",
-    cultural_provenance: "Asal Daerah & Konteks Budaya",
-    visual_identity: "Karakteristik Visual",
-    deep_philosophy: "Makna Filosofis Mendalam",
+    cultural_provenance: "Asal daerah",
+    visual_identity: "Karakteristik visual",
+    deep_philosophy: "Makna filosofis",
 
     // Footer
     footer_text: "Batik Vision AI · Indonesian Batik Motifs Recognition Engine",
@@ -159,8 +157,7 @@ export const DICTIONARY = {
     motifs_found: "motifs found",
     rare_badge: "Rare Motif",
     model_weak_note: "model classification accuracy is currently low on this motif",
-    view_details: "View full philosophy v",
-    hide_details: "Hide ^",
+    read_full_philosophy: "Read full philosophy",
     close_modal: "Close",
 
     // History
@@ -198,10 +195,9 @@ export const DICTIONARY = {
     theme_light: "Light Mode (Mori)",
     theme_dark: "Dark Mode (Wedelan)",
     toggle_theme: "Toggle Theme",
-    view_full_modal: "Open Full Details",
-    cultural_provenance: "Cultural Provenance & Regional Context",
-    visual_identity: "Visual Characteristics",
-    deep_philosophy: "Deep Cultural Philosophy",
+    cultural_provenance: "Regional provenance",
+    visual_identity: "Visual characteristics",
+    deep_philosophy: "Cultural philosophy",
 
     // Footer
     footer_text: "Batik Vision AI · Indonesian Batik Motifs Recognition Engine",
