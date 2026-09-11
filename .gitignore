@@ -17,8 +17,7 @@ env/
 data/raw_batik_v2.1/
 
 # Training artifacts too large for git
-results/v2.5/fold_*.keras
-results/v2.5/best_*.keras
+results/
 
 # OS generated files
 .DS_Store
