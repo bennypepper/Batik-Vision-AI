@@ -147,6 +147,7 @@ export default function HomePage() {
             language={language}
             onClearHistory={handleClearHistory}
             onNavigateToAtlas={handleNavigateToAtlas}
+            onStartScan={() => setCurrentTab("scanner")}
           />
         )}
 

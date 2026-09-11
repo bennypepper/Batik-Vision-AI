@@ -200,6 +200,14 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         setPredictions(result.predictions);
         setInferenceTimeMs(result.inferenceTimeMs);
         setStatus("done");
+
+        // Automatically persist scan into local history
+        onSaveScanRecord({
+          thumbnail: thumbData,
+          predictions: result.predictions,
+          inferenceTimeMs: result.inferenceTimeMs,
+        });
+        setIsSaved(true);
       } catch (err: any) {
         console.error("Classification error:", err);
         setErrorMsg(err?.message || "Classification failed");
@@ -226,6 +234,14 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
       setPredictions(result.predictions);
       setInferenceTimeMs(result.inferenceTimeMs);
       setStatus("done");
+
+      // Automatically persist scan into local history
+      onSaveScanRecord({
+        thumbnail: thumbData,
+        predictions: result.predictions,
+        inferenceTimeMs: result.inferenceTimeMs,
+      });
+      setIsSaved(true);
     } catch (err: any) {
       console.error("Classification error:", err);
       setErrorMsg(err?.message || "Classification failed");

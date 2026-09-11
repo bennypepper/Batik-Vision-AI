@@ -97,7 +97,10 @@ def build_labels_registry(labels_txt_path: str = None, output_path: str = None) 
         output_path = os.path.join(repo_root, "models", "labels.json")
 
     sys.path.insert(0, repo_root)
-    from src.utils.data import REGION_MAP, WEAK_CLASSES, BATIK_INFO
+    try:
+        from src.utils.data import REGION_MAP, WEAK_CLASSES, BATIK_INFO
+    except ImportError:
+        from archive.v2_legacy.streamlit_app.utils.data import REGION_MAP, WEAK_CLASSES, BATIK_INFO
 
     with open(labels_txt_path, "r", encoding="utf-8") as f:
         slugs = [line.strip() for line in f if line.strip()]

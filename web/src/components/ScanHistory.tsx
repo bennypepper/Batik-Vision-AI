@@ -11,64 +11,17 @@ interface ScanHistoryProps {
   language: AppLanguage;
   onClearHistory: () => void;
   onNavigateToAtlas?: (motifName: string) => void;
+  onStartScan?: () => void;
 }
-
-// Fallback sample records using authentic slugs
-const SAMPLE_RECORDS: Array<{
-  id: string;
-  name: string;
-  slug: string;
-  region: string;
-  timeStr: { id: string; en: string };
-  confidence: number;
-  query: string;
-}> = [
-  {
-    id: "sample_1",
-    name: "Yogyakarta Kawung",
-    slug: "Yogyakarta_Kawung",
-    region: "Yogyakarta",
-    timeStr: { id: "Hari ini, 14:22 · Yogyakarta (Jawa)", en: "Today, 14:22 · Yogyakarta (Java)" },
-    confidence: 92.4,
-    query: "Kawung",
-  },
-  {
-    id: "sample_2",
-    name: "Solo Parang",
-    slug: "Solo_Parang",
-    region: "Solo / Surakarta",
-    timeStr: { id: "Kemarin, 09:07 · Solo / Surakarta (Jawa)", en: "Yesterday, 09:07 · Solo / Surakarta (Java)" },
-    confidence: 88.1,
-    query: "Parang",
-  },
-  {
-    id: "sample_3",
-    name: "Ceplok",
-    slug: "Ceplok",
-    region: "Jawa Tengah",
-    timeStr: { id: "3 hari lalu, 18:45 · Jawa Tengah (Jawa)", en: "3 days ago, 18:45 · Central Java (Java)" },
-    confidence: 95.0,
-    query: "Ceplok",
-  },
-  {
-    id: "sample_4",
-    name: "Sogan",
-    slug: "Sogan",
-    region: "Solo / Surakarta",
-    timeStr: { id: "5 hari lalu, 11:30 · Solo / Surakarta (Jawa)", en: "5 days ago, 11:30 · Solo / Surakarta (Java)" },
-    confidence: 61.7,
-    query: "Sogan",
-  },
-];
 
 export const ScanHistory: React.FC<ScanHistoryProps> = ({
   records,
   language,
   onClearHistory,
   onNavigateToAtlas,
+  onStartScan,
 }) => {
   const hasUserRecords = records.length > 0;
-  const count = hasUserRecords ? records.length : SAMPLE_RECORDS.length;
 
   return (
     <div className="w-full max-w-5xl mx-auto pb-16 px-4">
@@ -82,29 +35,28 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
         </p>
       </div>
 
-      {/* Header Bar */}
-      <div className="flex items-center justify-between mt-6 mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-[var(--soga)]" />
-          <h3 className="text-[14.5px] font-semibold text-[var(--on-canvas)]">
-            {count} {t(language, "saved_scans")}
-          </h3>
-        </div>
-        {hasUserRecords && (
-          <button
-            onClick={onClearHistory}
-            className="text-[12px] text-[var(--on-canvas-soft)] hover:text-red-400 bg-transparent border border-[var(--canvas-line-strong)] hover:border-red-400/40 px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{t(language, "clear_history")}</span>
-          </button>
-        )}
-      </div>
+      {hasUserRecords ? (
+        <>
+          {/* Header Bar */}
+          <div className="flex items-center justify-between mt-6 mb-3 px-1">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[var(--soga)]" />
+              <h3 className="text-[14.5px] font-semibold text-[var(--on-canvas)]">
+                {records.length} {t(language, "saved_scans")}
+              </h3>
+            </div>
+            <button
+              onClick={onClearHistory}
+              className="text-[12px] text-[var(--on-canvas-soft)] hover:text-red-400 bg-transparent border border-[var(--canvas-line-strong)] hover:border-red-400/40 px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{t(language, "clear_history")}</span>
+            </button>
+          </div>
 
-      {/* History List */}
-      <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-xl overflow-hidden border border-[var(--cloth-line)] shadow-sm">
-        {hasUserRecords
-          ? records.map((rec, index) => {
+          {/* History List */}
+          <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-xl overflow-hidden border border-[var(--cloth-line)] shadow-sm">
+            {records.map((rec, index) => {
               const top = rec.topPrediction;
               const name = language === "id" ? top.classInfo.name_id : top.classInfo.name_en;
               const dateStr = new Date(rec.timestamp).toLocaleString(
@@ -148,44 +100,32 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
                   </button>
                 </div>
               );
-            })
-          : SAMPLE_RECORDS.map((sample) => (
-              <div
-                key={sample.id}
-                className="flex items-center gap-4 px-5 py-4 border-b border-[var(--cloth-line)] last:border-b-0 hover:bg-[var(--cloth-deep)] transition"
-              >
-                {/* Authentic Swatch */}
-                <div className="w-12 h-12 rounded-lg overflow-hidden border border-[var(--cloth-line)] bg-stone-900 shrink-0">
-                  <img
-                    src={`/motifs/${sample.slug}.jpg`}
-                    alt={sample.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14.5px] font-semibold text-[var(--on-cloth)] truncate">
-                    {sample.name}
-                  </div>
-                  <div className="text-[12px] text-[var(--on-cloth-faint)] truncate mt-0.5">
-                    {language === "id" ? sample.timeStr.id : sample.timeStr.en}
-                  </div>
-                </div>
-
-                <div className="text-[13.5px] font-semibold text-[var(--soga)] tnum shrink-0 text-right">
-                  {sample.confidence.toFixed(1)}%
-                </div>
-
-                <button
-                  onClick={() => onNavigateToAtlas?.(sample.query)}
-                  className="text-[12px] font-medium text-[var(--soga)] hover:underline shrink-0 flex items-center gap-1 bg-transparent border-none cursor-pointer pl-2"
-                >
-                  <span>{t(language, "view_detail_link")}</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-      </div>
+            })}
+          </div>
+        </>
+      ) : (
+        /* Empty State */
+        <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-xl p-10 border border-[var(--cloth-line)] text-center max-w-md mx-auto shadow-sm my-8">
+          <div className="w-12 h-12 rounded-full bg-[var(--cloth-deep)] border border-[var(--cloth-line)] flex items-center justify-center mx-auto mb-3.5 text-[var(--soga)]">
+            <Clock className="w-5 h-5" />
+          </div>
+          <h3 className="text-[15.5px] font-semibold text-[var(--on-cloth)] mb-1.5">
+            {t(language, "no_scans")}
+          </h3>
+          <p className="text-[13px] text-[var(--on-cloth-soft)] leading-relaxed mb-5 max-w-xs mx-auto">
+            {t(language, "no_scans_prompt")}
+          </p>
+          {onStartScan && (
+            <button
+              onClick={onStartScan}
+              className="inline-flex items-center gap-2 bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white text-xs font-semibold px-4 py-2.5 rounded-md transition cursor-pointer border-none shadow-sm"
+            >
+              <span>{t(language, "btn_start_scan")}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

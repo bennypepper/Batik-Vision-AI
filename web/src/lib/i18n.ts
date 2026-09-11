@@ -69,7 +69,9 @@ export const DICTIONARY = {
     history_title: "Riwayat Pemindaian",
     history_desc: "Semua pemindaian tersimpan secara lokal di perangkat Anda - tidak pernah dikirim ke server manapun.",
     saved_scans: "pemindaian tersimpan",
-    no_scans: "Belum ada pemindaian tersimpan.",
+    no_scans: "Belum ada riwayat pemindaian.",
+    no_scans_prompt: "Hasil klasifikasi kain batik Anda akan otomatis tersimpan di sini.",
+    btn_start_scan: "Mulai Pindai Kain",
     clear_history: "Kosongkan riwayat",
     view_detail_link: "Lihat detail",
 
@@ -176,7 +178,9 @@ export const DICTIONARY = {
     history_title: "Scan History",
     history_desc: "All scans are stored locally on your device - never transmitted to any external server.",
     saved_scans: "saved scans",
-    no_scans: "No saved scans yet.",
+    no_scans: "No scans recorded yet.",
+    no_scans_prompt: "Your classified batik textile scans will appear here automatically.",
+    btn_start_scan: "Start Fabric Scan",
     clear_history: "Clear history",
     view_detail_link: "View details",
 

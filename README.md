@@ -1,126 +1,180 @@
-# CNN Batik Motifs Detector
+# Batik Vision AI: Two-Stage Indonesian Batik Motifs Recognition Engine
 
-An end-to-end deep learning pipeline and interactive web application that classifies **28 traditional Indonesian batik motifs** using a fine-tuned EfficientNetV2S backbone.
+Batik Vision AI is a computer vision platform designed to preserve, document, and classify 28 traditional Indonesian batik motifs. The system combines fabric localization via YOLO with high-resolution texture classification via EfficientNetV2S, executed entirely client-side using WebAssembly and WebGL.
 
-## Project Overview
+## System Architecture
 
-Batik is a UNESCO-recognised intangible cultural heritage of Indonesia. Each region produces motifs with distinct visual signatures rooted in centuries of tradition. This project automates motif recognition to help preserve, document, and educate people about Indonesia's textile heritage.
+```
+                       [ Input Image: Textile or Garment ]
+                                        │
+                                        ▼
+                   ┌──────────────────────────────────────────┐
+                   │   Stage 1: Fabric Localization (YOLO)    │
+                   │  - ROI detection and framing guidance    │
+                   │  - Boundary edge gradient energy test    │
+                   │  - Full Swatch vs Focus Center presets   │
+                   └────────────────────┬─────────────────────┘
+                                        │
+                                        ▼
+                   ┌──────────────────────────────────────────┐
+                   │ Stage 2: Motif Texture Classifier (CNN)  │
+                   │  - Backbone: Fine-Tuned EfficientNetV2S  │
+                   │  - Input: 224x224x3 float32 [0, 255]     │
+                   │  - Internal Rescaling: [-1, 1]           │
+                   │  - Output: 28-class probability vector   │
+                   └────────────────────┬─────────────────────┘
+                                        │
+                                        ▼
+                   ┌──────────────────────────────────────────┐
+                   │    Zero-Backend Client-Side Execution    │
+                   │  - ONNX Runtime WebAssembly & WebGL      │
+                   │  - Zero server transfer / complete privacy│
+                   │  - Local history & Cultural Atlas viewer │
+                   └──────────────────────────────────────────┘
+```
 
-### v2 Highlights
+## Architectural Improvements: v2 to v3
 
-| Metric | v1 | v2 |
-|---|---|---|
-| Backbone | EfficientNetB0 | **EfficientNetV2S** |
-| Classes | 20 | **28** |
-| Validation | Single split | **5-Fold Stratified K-Fold** |
-| Test Accuracy | ~82% | **84.68% (TTA)** |
-| Macro F1 | 0.66 | **0.81** |
-| Inference | Keras `.h5` | **TFLite FP16 (39 MB)** |
+### 1. Elimination of Double Preprocessing
+In v2, input images underwent double normalization: the preprocessing function scaled raw pixels from `[0, 255]` to `[-1, 1]`, and the Keras model internally applied a second normalization layer, compressing dynamic range to `[-1.008, -0.992]`. In v3, `EfficientNetV2S` is instantiated with `include_preprocessing=False` and a single, explicit internal `Rescaling(scale=1.0/127.5, offset=-1.0)` layer that accepts raw `[0, 255]` float32 tensors.
 
-## Tech Stack
+### 2. Perceptual Hash Deduplication
+A comprehensive audit using 64-bit difference hashing (dHash with Hamming distance threshold <= 4) identified 799 duplicate and near-duplicate image pairs across splits and folds in the dataset. Deduplication eliminated data leakage between training and validation sets, ensuring valid generalization metrics.
 
-- **Language:** Python 3.10
-- **Deep Learning:** TensorFlow / Keras (EfficientNetV2S), TFLite for inference
-- **Web Framework:** Streamlit
-- **Data Processing:** NumPy, Pillow, OpenCV, Pandas
-- **Augmentation:** Albumentations (tier-based by class size)
-- **Training Environment:** Kaggle (NVIDIA Tesla P100)
+### 3. Class Imbalance Handling: Focal Loss and Sample Weighting
+Minority classes (such as Priangan Merak Ngibing and Sogan) suffered from high error rates in v2. Version 3 incorporates:
+- Categorical Focal Loss with focusing parameter gamma = 2.0.
+- Effective Number of Samples weighting based on (1 - beta) / (1 - beta^n) with beta = 0.999.
+
+### 4. Two-Stage Fabric Localization Pipeline
+Rather than forcing raw uncurated photographs directly into a texture classifier, Stage 1 uses YOLO fabric detection to isolate textile regions and calculate border spatial gradient energy. Close-up fabric swatches are automatically framed at 100% full pattern, while garments on models or mannequins default to 50% central focus with manual ROI fine-tuning capabilities.
+
+### 5. Client-Side WebAssembly Execution
+The trained EfficientNetV2S model is exported to ONNX format with FP16 weights (`batik_v3_classifier.onnx`) and evaluated directly inside the browser using ONNX Runtime Web. User photos are never uploaded to remote servers, eliminating hosting infrastructure costs and ensuring data privacy.
+
+## Supported Batik Motifs (28 Classes)
+
+| # | Motif Identifier | Indonesian Name | English Name | Region | Island |
+|---|---|---|---|---|---|
+| 1 | Bali_Barong | Bali Barong | Bali Barong | Bali | Bali |
+| 2 | Bali_Merak | Bali Merak | Bali Peacock | Bali | Bali |
+| 3 | Ceplok | Ceplok | Ceplok Geometric | Jawa Tengah | Jawa |
+| 4 | Corak_Insang | Corak Insang | Pontianak Gill Pattern | Kalimantan Barat | Kalimantan |
+| 5 | Ikat_Celup | Ikat Celup | Tie-Dye Batik | Nusantara | Nusantara |
+| 6 | Jakarta_Ondel_Ondel | Jakarta Ondel Ondel | Jakarta Ondel-Ondel | DKI Jakarta | Jawa |
+| 7 | Jawa_Barat_Megamendung | Jawa Barat Megamendung | Cirebon Cloud (Megamendung) | Jawa Barat | Jawa |
+| 8 | Jawa_Timur_Pring | Jawa Timur Pring | East Java Bamboo (Pring Sedapur) | Jawa Timur | Jawa |
+| 9 | Kalimantan_Dayak | Kalimantan Dayak | Dayak Tree of Life | Kalimantan | Kalimantan |
+| 10 | Lampung_Gajah | Lampung Gajah | Lampung Elephant | Lampung | Sumatera |
+| 11 | Lasem | Lasem | Lasem Sino-Javanese | Jawa Tengah | Jawa |
+| 12 | Madura_Mataketeran | Madura Mataketeran | Madura Dove Eye | Madura | Madura |
+| 13 | Maluku_Pala | Maluku Pala | Maluku Nutmeg Spice | Maluku | Maluku |
+| 14 | NTB_Lumbung | NTB Lumbung | Lombok Rice Barn (Lumbung) | Nusa Tenggara Barat | Nusa Tenggara |
+| 15 | Papua_Asmat | Papua Asmat | Papua Asmat Woodcarving | Papua | Papua |
+| 16 | Papua_Cendrawasih | Papua Cendrawasih | Papua Bird of Paradise | Papua | Papua |
+| 17 | Papua_Tifa | Papua Tifa | Papua Tifa Drum | Papua | Papua |
+| 18 | Priangan_Merak_Ngibing | Priangan Merak Ngibing | Priangan Dancing Peacock | Jawa Barat | Jawa |
+| 19 | Sekar | Sekar | Sekar Jagad Floral Universe | Jawa | Jawa |
+| 20 | Sidoluhur | Sidoluhur | Sidoluhur Noble Attainment | Jawa Tengah / Yogyakarta | Jawa |
+| 21 | Sogan | Sogan | Solo Classic Golden-Brown Sogan | Solo / Surakarta | Jawa |
+| 22 | Solo_Parang | Solo Parang | Solo Parang Wave | Solo / Surakarta | Jawa |
+| 23 | Sulawesi_Selatan_Lontara | Sulawesi Selatan Lontara | South Sulawesi Lontara Script | Sulawesi Selatan | Sulawesi |
+| 24 | Sumatera_Barat_Rumah_Minang | Sumatera Barat Rumah Minang | West Sumatra Minang House | Sumatera Barat | Sumatera |
+| 25 | Sumatera_Utara_Boraspati | Sumatera Utara Boraspati | North Sumatra Boraspati Lizard | Sumatera Utara | Sumatera |
+| 26 | Tambal | Tambal | Tambal Patchwork Healing | Jawa | Jawa |
+| 27 | Yogyakarta_Kawung | Yogyakarta Kawung | Yogyakarta Aren Palm (Kawung) | Yogyakarta | Jawa |
+| 28 | Yogyakarta_Parang | Yogyakarta Parang | Yogyakarta Parang Rusak | Yogyakarta | Jawa |
 
 ## Repository Structure
 
 ```
-CNN-Batik-Motifs-Detector/
+Batik-Vision-AI/
+├── web/                             # Production Next.js 16 client application
+│   ├── public/
+│   │   ├── models/                  # ONNX runtime models (batik_v3_classifier.onnx)
+│   │   └── motifs/                  # Exemplar motif swatch imagery
+│   ├── src/
+│   │   ├── app/                     # Next.js layout and entrypage
+│   │   ├── components/              # UI components (Scanner, Atlas, History, About)
+│   │   ├── lib/                     # ONNX runner, YOLO detector, i18n dictionary
+│   │   └── types/                   # TypeScript interfaces
+│   ├── package.json
+│   └── tsconfig.json
 ├── src/
-│   └── app.py                  # Streamlit web application
-├── models/
-│   ├── batik_model_v2.tflite   # Production model (FP16 quantized)
-│   ├── labels.txt              # 28 class names (alphabetical)
-│   └── archive/v1/             # Archived v1 model + labels
+│   └── ml/                          # Core ML pipeline modules
+│       ├── pipeline.py              # EfficientNetV2S architecture and weighting
+│       └── losses.py                # Categorical focal loss implementation
 ├── notebooks/
-│   ├── batik_motifs_v2_5.ipynb # Full Kaggle training notebook
-│   └── cells/                  # Human-readable cell exports (.py)
-├── results/v2.5/               # Evaluation outputs (plots, CSVs, reports)
-├── docs/
-│   ├── ARCHITECTURE_v2.md      # Full technical architecture reference
-│   ├── code_review_v2.md       # Detailed code review
-│   ├── laporan_project_akhir.pdf
-│   └── presentasi_klasifikasi.pdf
-├── scripts/                    # Dataset utility scripts
-├── data/                       # Dataset directory (gitignored)
-├── archive/v2_dev/             # Development scratch files
+│   ├── batik_motifs_v3_train.ipynb  # End-to-end Kaggle training notebook
+│   └── cells_v3/                    # Modular Python training cells
+├── models/
+│   ├── labels.json                  # Comprehensive multilingual labels registry
+│   └── labels.txt                   # Ordered class list
+├── results/
+│   └── v3_results/                  # Kaggle evaluation charts, reports, and weights
+├── scripts/                         # Dataset hygiene and ONNX conversion utilities
+├── tests/                           # Pytest automated test suite
+├── docs/                            # Architectural specifications and plans
+├── archive/
+│   ├── v1/                          # Legacy v1 model artifacts
+│   ├── v2_dev/                      # Legacy v2 development logs
+│   └── v2_legacy/                   # Archived v2 Streamlit app, notebooks, and reports
 ├── requirements.txt
 ├── LICENSE
 └── README.md
 ```
 
-## Quick Start
+## Getting Started
 
-### Run Locally
+### 1. Web Application (Next.js)
+
+To run the interactive web application locally:
 
 ```bash
-git clone https://github.com/bennypepper/CNN-Batik-Motifs-Detector.git
-cd CNN-Batik-Motifs-Detector
-pip install -r requirements.txt
-streamlit run src/app.py
+cd web
+npm install
+npm run dev
 ```
 
-> **Note:** The TFLite model (`models/batik_model_v2.tflite`, 39 MB) must be present. If git-ignored, download it from the [Releases](https://github.com/bennypepper/CNN-Batik-Motifs-Detector/releases) page.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Deploy on Streamlit Community Cloud
+To generate an optimized production build:
 
-1. Fork this repository
-2. Upload `batik_model_v2.tflite` to `models/` (or use Git LFS)
-3. Connect to [share.streamlit.io](https://share.streamlit.io)
-4. Set main file path: `src/app.py`
+```bash
+cd web
+npm run build
+npm run start
+```
 
-## 28 Supported Batik Motifs
+### 2. Python Testing and Dataset Scripts
 
-| # | Class | Region | # | Class | Region |
-|---|---|---|---|---|---|
-| 1 | Bali Barong | Bali | 15 | Papua Asmat | Papua |
-| 2 | Bali Merak | Bali | 16 | Papua Cendrawasih | Papua |
-| 3 | Ceplok | Jawa | 17 | Papua Tifa | Papua |
-| 4 | Corak Insang | Kalimantan Barat | 18 | Priangan Merak Ngibing | Jawa Barat |
-| 5 | Ikat Celup | Nusantara | 19 | Sekar | Jawa |
-| 6 | Jakarta Ondel-Ondel | DKI Jakarta | 20 | Sidoluhur | Jawa |
-| 7 | Jawa Barat Megamendung | Jawa Barat | 21 | Sogan | Solo |
-| 8 | Jawa Timur Pring | Jawa Timur | 22 | Solo Parang | Solo |
-| 9 | Kalimantan Dayak | Kalimantan | 23 | Sulawesi Selatan Lontara | Sulawesi |
-| 10 | Lampung Gajah | Lampung | 24 | Sumatera Barat Rumah Minang | Sumatera |
-| 11 | Lasem | Jawa Tengah | 25 | Sumatera Utara Boraspati | Sumatera |
-| 12 | Madura Mataketeran | Madura | 26 | Tambal | Jawa |
-| 13 | Maluku Pala | Maluku | 27 | Yogyakarta Kawung | Yogyakarta |
-| 14 | NTB Lumbung | NTB | 28 | Yogyakarta Parang | Yogyakarta |
+Set up the Python environment:
 
-## Results
+```bash
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
 
-- **TTA Accuracy:** 84.68% (5-pass Test-Time Augmentation)
-- **Macro F1:** 81.45%
-- **Top performers:** Bali Barong, Madura Mataketeran, NTB Lumbung, Papua Tifa (F1 = 1.00)
-- **Weak classes:** Priangan Merak Ngibing (F1 = 0.40), Sogan (F1 = 0.40), Lasem (F1 = 0.61)
+pip install -r requirements.txt
+```
 
-For detailed per-class metrics, confusion matrix, and architecture decisions, see [`docs/ARCHITECTURE_v2.md`](docs/ARCHITECTURE_v2.md).
+Run test suite:
 
-## Version History
+```bash
+pytest tests/ -v
+```
 
-| Version | Tag | Description |
-|---|---|---|
-| v1.0 | `v1.0` | EfficientNetB0, 20 classes, Keras `.h5`, ~82% accuracy |
-| v2.0 | `main` | EfficientNetV2S, 28 classes, TFLite FP16, 84.68% TTA accuracy |
+## Model Training and Export
 
-To restore v1: `git checkout v1.0`
+Training was performed on a Kaggle environment with an NVIDIA Tesla P100 GPU using 5-Fold Stratified Cross-Validation. To replicate training:
 
-## Team
-
-- **Benedict Michael Pepper**
-- **Gilbetch Ronaldo Triswanto**
-- **Sutri Ajeng Neng Rahayu**
-- **Cecilia Margaretha**
-
-Program Studi Teknik Informatika — Universitas Ma Chung
+1. Import `notebooks/batik_motifs_v3_train.ipynb` into Kaggle.
+2. Attach the dataset containing 28 batik motif classes.
+3. Execute the notebook to produce `.keras`, `.tflite`, and `.onnx` artifacts.
+4. Convert model weights to ONNX format using `scripts/convert_keras_to_onnx.py`.
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-Dataset derived from [Batik-Indonesia](https://huggingface.co/datasets/muhammadsalmanalfaridzi/Batik-Indonesia) by Muhammad Salman Al Faridzi (Apache 2.0).
+This project is licensed under the MIT License. See LICENSE for details.
