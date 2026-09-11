@@ -68,75 +68,64 @@ function computeAdaptiveFabricSaliency(
     const imgData = ctx.getImageData(0, 0, w, h);
     const data = imgData.data;
 
-    // Sample perimeter borders (outer 5%) and center region
-    const bw = Math.max(2, Math.round(w * 0.05));
-    const bh = Math.max(2, Math.round(h * 0.05));
+    const lumaAt = (px: number, py: number): number => {
+      const cx = Math.max(0, Math.min(w - 1, px));
+      const cy = Math.max(0, Math.min(h - 1, py));
+      const idx = (cy * w + cx) * 4;
+      return 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+    };
+
+    // Sample perimeter borders (outer 6%) and center 50% region
+    const bw = Math.max(2, Math.round(w * 0.06));
+    const bh = Math.max(2, Math.round(h * 0.06));
     const step = Math.max(1, Math.floor(Math.min(w, h) / 100));
 
-    let borderWhiteCount = 0;
-    let borderDarkCount = 0;
-    let borderSampleCount = 0;
-
+    const borderGradients: number[] = [];
     const borderLumas: number[] = [];
+    const centerGradients: number[] = [];
     const centerLumas: number[] = [];
 
-    // Sample top and bottom borders
+    // 1. Top and Bottom border strips
     for (let y = 0; y < bh; y += step) {
       for (let x = 0; x < w; x += step) {
-        // Top border
-        const idxTop = (y * w + x) * 4;
-        const rT = data[idxTop];
-        const gT = data[idxTop + 1];
-        const bT = data[idxTop + 2];
-        const lumaT = 0.299 * rT + 0.587 * gT + 0.114 * bT;
+        // Top
+        const lumaT = lumaAt(x, y);
         borderLumas.push(lumaT);
-        if (rT > 215 && gT > 215 && bT > 215) borderWhiteCount++;
-        if (rT < 35 && gT < 35 && bT < 35) borderDarkCount++;
-        borderSampleCount++;
+        const gxT = Math.abs(lumaAt(x + 1, y) - lumaAt(x - 1, y));
+        const gyT = Math.abs(lumaAt(x, y + 1) - lumaAt(x, y - 1));
+        borderGradients.push(gxT + gyT);
 
-        // Bottom border
-        const yBot = h - 1 - y;
-        const idxBot = (yBot * w + x) * 4;
-        const rB = data[idxBot];
-        const gB = data[idxBot + 1];
-        const bB = data[idxBot + 2];
-        const lumaB = 0.299 * rB + 0.587 * gB + 0.114 * bB;
+        // Bottom
+        const yB = h - 1 - y;
+        const lumaB = lumaAt(x, yB);
         borderLumas.push(lumaB);
-        if (rB > 215 && gB > 215 && bB > 215) borderWhiteCount++;
-        if (rB < 35 && gB < 35 && bB < 35) borderDarkCount++;
-        borderSampleCount++;
+        const gxB = Math.abs(lumaAt(x + 1, yB) - lumaAt(x - 1, yB));
+        const gyB = Math.abs(lumaAt(x, yB + 1) - lumaAt(x, yB - 1));
+        borderGradients.push(gxB + gyB);
       }
     }
 
-    // Sample left and right borders
+    // 2. Left and Right border strips
     for (let x = 0; x < bw; x += step) {
       for (let y = bh; y < h - bh; y += step) {
-        // Left border
-        const idxLeft = (y * w + x) * 4;
-        const rL = data[idxLeft];
-        const gL = data[idxLeft + 1];
-        const bL = data[idxLeft + 2];
-        const lumaL = 0.299 * rL + 0.587 * gL + 0.114 * bL;
+        // Left
+        const lumaL = lumaAt(x, y);
         borderLumas.push(lumaL);
-        if (rL > 215 && gL > 215 && bL > 215) borderWhiteCount++;
-        if (rL < 35 && gL < 35 && bL < 35) borderDarkCount++;
-        borderSampleCount++;
+        const gxL = Math.abs(lumaAt(x + 1, y) - lumaAt(x - 1, y));
+        const gyL = Math.abs(lumaAt(x, y + 1) - lumaAt(x, y - 1));
+        borderGradients.push(gxL + gyL);
 
-        // Right border
-        const xRight = w - 1 - x;
-        const idxRight = (y * w + xRight) * 4;
-        const rR = data[idxRight];
-        const gR = data[idxRight + 1];
-        const bR = data[idxRight + 2];
-        const lumaR = 0.299 * rR + 0.587 * gR + 0.114 * bR;
+        // Right
+        const xR = w - 1 - x;
+        const lumaR = lumaAt(xR, y);
         borderLumas.push(lumaR);
-        if (rR > 215 && gR > 215 && bR > 215) borderWhiteCount++;
-        if (rR < 35 && gR < 35 && bR < 35) borderDarkCount++;
-        borderSampleCount++;
+        const gxR = Math.abs(lumaAt(xR + 1, y) - lumaAt(xR - 1, y));
+        const gyR = Math.abs(lumaAt(xR, y + 1) - lumaAt(xR, y - 1));
+        borderGradients.push(gxR + gyR);
       }
     }
 
-    // Sample center 50% region
+    // 3. Center 50% region
     const cStartX = Math.round(w * 0.25);
     const cEndX = Math.round(w * 0.75);
     const cStartY = Math.round(h * 0.25);
@@ -144,32 +133,37 @@ function computeAdaptiveFabricSaliency(
 
     for (let y = cStartY; y < cEndY; y += step * 2) {
       for (let x = cStartX; x < cEndX; x += step * 2) {
-        const idx = (y * w + x) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        centerLumas.push(0.299 * r + 0.587 * g + 0.114 * b);
+        const lumaC = lumaAt(x, y);
+        centerLumas.push(lumaC);
+        const gxC = Math.abs(lumaAt(x + 1, y) - lumaAt(x - 1, y));
+        const gyC = Math.abs(lumaAt(x, y + 1) - lumaAt(x, y - 1));
+        centerGradients.push(gxC + gyC);
       }
     }
 
+    const calcMean = (arr: number[]): number => {
+      if (arr.length === 0) return 0;
+      return arr.reduce((acc, v) => acc + v, 0) / arr.length;
+    };
+
     const calcStd = (arr: number[]): number => {
       if (arr.length === 0) return 0;
-      const mean = arr.reduce((acc, v) => acc + v, 0) / arr.length;
+      const mean = calcMean(arr);
       const variance = arr.reduce((acc, v) => acc + (v - mean) ** 2, 0) / arr.length;
       return Math.sqrt(variance);
     };
 
+    const meanBorderGrad = calcMean(borderGradients);
     const borderStd = calcStd(borderLumas);
     const centerStd = calcStd(centerLumas);
     const varianceRatio = borderStd / Math.max(1.0, centerStd);
 
-    const whiteBgRatio = borderSampleCount > 0 ? borderWhiteCount / borderSampleCount : 0;
-    const darkBgRatio = borderSampleCount > 0 ? borderDarkCount / borderSampleCount : 0;
-
-    // Decision: If borders have significant uniform backdrop (white/dark studio background)
-    // or significantly lower variance than center, image is a garment/mannequin.
-    // Otherwise, image is an edge-to-edge fabric swatch.
-    const isGarment = whiteBgRatio > 0.25 || darkBgRatio > 0.25 || varianceRatio < 0.45;
+    // Decision:
+    // A scene/garment photo (mannequin, model, studio shot) has a dead, uniform backdrop
+    // with virtually no border edge gradients (< 6.5) and low border-to-center variance ratio (< 0.42).
+    // An edge-to-edge fabric swatch (regardless of whether dark latar ireng or light mori ground)
+    // has continuous wax canting lines and pattern transitions crossing the borders.
+    const isGarment = (meanBorderGrad < 6.5) || (varianceRatio < 0.42 && meanBorderGrad < 11.0);
     const framingMode: "swatch" | "center" = isGarment ? "center" : "swatch";
     const chosenBox = isGarment ? presets.center : presets.swatch;
 
@@ -179,7 +173,7 @@ function computeAdaptiveFabricSaliency(
       presets,
     };
   } catch {
-    // Graceful fallback to swatch preset
+    // Graceful fallback to full swatch preset
     return {
       ...presets.swatch,
       framingMode: "swatch",
