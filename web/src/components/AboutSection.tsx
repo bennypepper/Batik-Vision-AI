@@ -92,7 +92,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ language }) => {
               </a>
 
               <a
-                href="https://github.com/bennypepper/CNN-Batik-Motifs-Detector"
+                href="https://github.com/bennypepper/Batik-Vision-AI"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--cloth-deep)] hover:bg-[var(--canvas-deep)] text-[var(--on-cloth)] text-[12px] font-medium border border-[var(--cloth-line-strong)] transition no-underline"
