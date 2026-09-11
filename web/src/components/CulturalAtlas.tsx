@@ -1,22 +1,63 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { BatikClass, AppLanguage } from "@/types/batik";
 import { getAllMotifs, getAllIslands } from "@/lib/labels-data";
 import { t } from "@/lib/i18n";
-import { Search, MapPin, Sparkles, BookOpen, X } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
 
 interface CulturalAtlasProps {
   language: AppLanguage;
+  initialQuery?: string;
 }
 
-export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({ language }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
+  language,
+  initialQuery,
+}) => {
+  const [searchQuery, setSearchQuery] = useState(initialQuery || "");
   const [selectedIsland, setSelectedIsland] = useState<string>("ALL");
-  const [activeModalMotif, setActiveModalMotif] = useState<BatikClass | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({});
+  const [flashedId, setFlashedId] = useState<number | null>(null);
 
   const allMotifs = useMemo(() => getAllMotifs(), []);
   const islands = useMemo(() => getAllIslands(), []);
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  // Sync initial query when navigated from Scanner or History
+  useEffect(() => {
+    if (initialQuery) {
+      setSearchQuery(initialQuery);
+      setSelectedIsland("ALL");
+
+      // Locate first matching motif and scroll/flash
+      const match = allMotifs.find(
+        (m) =>
+          m.name_id.toLowerCase().includes(initialQuery.toLowerCase()) ||
+          m.name_en.toLowerCase().includes(initialQuery.toLowerCase()) ||
+          m.slug.toLowerCase().includes(initialQuery.toLowerCase())
+      );
+
+      if (match) {
+        setFlashedId(match.id);
+        const timer = setTimeout(() => {
+          const el = cardRefs.current[match.id];
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 100);
+
+        const clearFlashTimer = setTimeout(() => {
+          setFlashedId(null);
+        }, 1800);
+
+        return () => {
+          clearTimeout(timer);
+          clearTimeout(clearFlashTimer);
+        };
+      }
+    }
+  }, [initialQuery, allMotifs]);
 
   const filteredMotifs = useMemo(() => {
     return allMotifs.filter((m) => {
@@ -39,187 +80,152 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({ language }) => {
     });
   }, [allMotifs, selectedIsland, searchQuery, language]);
 
+  const toggleExpand = (id: number) => {
+    setExpandedIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2 py-2">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-100 tracking-tight">
+    <div className="w-full max-w-[1180px] mx-auto space-y-6 pb-12">
+      {/* Hero Header */}
+      <div className="text-center pt-8 pb-2 px-4">
+        <h1 className="display text-2xl sm:text-3xl font-semibold text-[var(--on-canvas)] mb-2.5">
           {t(language, "atlas_title")}
-        </h2>
-        <p className="text-sm text-stone-400 max-w-2xl mx-auto">
+        </h1>
+        <p className="text-[13.5px] text-[var(--on-canvas-soft)] max-w-[620px] mx-auto leading-relaxed">
           {t(language, "atlas_desc")}
         </p>
       </div>
 
-      {/* Search and Island Filter Bar */}
-      <div className="space-y-3 bg-stone-900/80 p-4 rounded-2xl border border-stone-800 shadow-lg">
-        {/* Search input */}
+      {/* Search Input */}
+      <div className="max-w-[760px] mx-auto px-4">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--on-canvas-faint)]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t(language, "search_placeholder")}
-            className="w-full pl-10 pr-4 py-2.5 bg-stone-950/80 border border-stone-800 rounded-xl text-sm text-stone-200 placeholder-stone-500 focus:outline-none focus:border-amber-500/80 transition"
+            className="w-full bg-[var(--canvas-deep)] border border-[var(--canvas-line-strong)] rounded-lg py-3.5 pl-11 pr-4 text-[13.5px] text-[var(--on-canvas)] placeholder:text-[var(--on-canvas-faint)] focus:outline-none focus:border-[var(--soga)] transition"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-500 hover:text-stone-300"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[var(--on-canvas-faint)] hover:text-[var(--on-canvas)] transition px-1.5 py-0.5"
             >
               Clear
             </button>
           )}
         </div>
+      </div>
 
-        {/* Island filter pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+      {/* Island Filter Pills */}
+      <div className="flex flex-wrap gap-2 justify-center max-w-[900px] mx-auto px-4">
+        <button
+          onClick={() => setSelectedIsland("ALL")}
+          className={`text-[12px] px-3.5 py-1.5 rounded-full border transition cursor-pointer ${
+            selectedIsland === "ALL"
+              ? "bg-[var(--soga)] border-[var(--soga)] text-white font-semibold shadow-sm"
+              : "border-[var(--canvas-line-strong)] text-[var(--on-canvas-soft)] hover:bg-[rgba(237,230,216,0.05)]"
+          }`}
+        >
+          {t(language, "all_islands")}
+        </button>
+        {islands.map((isl) => (
           <button
-            onClick={() => setSelectedIsland("ALL")}
-            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition ${
-              selectedIsland === "ALL"
-                ? "bg-amber-600 text-stone-950 font-bold shadow"
-                : "bg-stone-800 text-stone-400 hover:text-stone-200"
+            key={isl}
+            onClick={() => setSelectedIsland(isl)}
+            className={`text-[12px] px-3.5 py-1.5 rounded-full border transition cursor-pointer ${
+              selectedIsland === isl
+                ? "bg-[var(--soga)] border-[var(--soga)] text-white font-semibold shadow-sm"
+                : "border-[var(--canvas-line-strong)] text-[var(--on-canvas-soft)] hover:bg-[rgba(237,230,216,0.05)]"
             }`}
           >
-            {t(language, "all_islands")}
+            {isl}
           </button>
-          {islands.map((isl) => (
-            <button
-              key={isl}
-              onClick={() => setSelectedIsland(isl)}
-              className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition ${
-                selectedIsland === isl
-                  ? "bg-amber-600 text-stone-950 font-bold shadow"
-                  : "bg-stone-800 text-stone-400 hover:text-stone-200"
-              }`}
-            >
-              {isl}
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
 
       {/* Result Count */}
-      <div className="text-xs text-stone-400 flex items-center justify-between px-1">
-        <span>
-          {filteredMotifs.length} {t(language, "motifs_found")}
-        </span>
-        {selectedIsland !== "ALL" && (
-          <span className="text-amber-400 font-mono">
-            {selectedIsland}
-          </span>
-        )}
+      <div className="text-center text-[12px] text-[var(--on-canvas-faint)] pt-1">
+        {filteredMotifs.length} {t(language, "motifs_found")}
       </div>
 
-      {/* Grid of Motif Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredMotifs.map((motif) => {
+      {/* Motif Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4 sm:px-7">
+        {filteredMotifs.map((motif, index) => {
           const name = language === "id" ? motif.name_id : motif.name_en;
-          const desc = language === "id" ? motif.description_id : motif.description_en;
+          const fullDesc = language === "id" ? motif.description_id : motif.description_en;
+          const swatchClass = `swatch-${(index % 5) + 1}`;
+          const isExpanded = !!expandedIds[motif.id];
+          const isFlashed = flashedId === motif.id;
+
+          // Curatorial rarity: Lasem is the genuine cultural rarity
+          const isCulturallyRare = motif.slug === "Lasem";
+          // Model weakness: Priangan Merak Ngibing and Sogan have lower classification accuracy
+          const isModelWeak =
+            motif.slug === "Priangan_Merak_Ngibing" || motif.slug === "Sogan";
 
           return (
             <div
               key={motif.id}
-              onClick={() => setActiveModalMotif(motif)}
-              className="bg-stone-900/80 hover:bg-stone-900 rounded-xl border border-stone-800 hover:border-amber-500/50 p-5 space-y-3 cursor-pointer transition-all duration-200 shadow-md hover:shadow-xl hover:shadow-amber-950/20 flex flex-col justify-between group"
+              ref={(el) => {
+                cardRefs.current[motif.id] = el;
+              }}
+              className={`bg-[var(--cloth)] text-[var(--on-cloth)] rounded-lg p-4 flex flex-col justify-between transition-all ${
+                isFlashed ? "flash" : ""
+              }`}
             >
-              <div className="space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-stone-200 group-hover:text-amber-300 transition text-base leading-snug">
-                    {name}
-                  </h3>
-                  {motif.is_weak_class && (
-                    <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/50">
-                      {t(language, "weak_class_badge")}
-                    </span>
-                  )}
+              <div>
+                {/* Top: Swatch and Title */}
+                <div className="flex gap-3 mb-2.5">
+                  <div className={`w-10 h-10 rounded-md shrink-0 ${swatchClass}`} />
+                  <div className="min-w-0">
+                    <h3 className="text-[14.5px] font-semibold text-[var(--on-cloth)] leading-snug truncate">
+                      {name}
+                    </h3>
+                    <div className="text-[11.5px] text-[var(--on-cloth-faint)] flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3 h-3 text-[var(--on-cloth-faint)] shrink-0" />
+                      <span className="truncate">
+                        {motif.region} · {motif.island}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-stone-400">
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-amber-400" />
-                    {motif.region}
-                  </span>
-                  <span className="text-stone-600">•</span>
-                  <span className="text-stone-400">{motif.island}</span>
-                </div>
-
-                <p className="text-xs text-stone-400 line-clamp-3 leading-relaxed">
-                  {desc}
+                {/* Description */}
+                <p className="text-[12.5px] text-[var(--on-cloth-soft)] leading-relaxed mb-3">
+                  {isExpanded ? fullDesc : `${fullDesc.slice(0, 140)}${fullDesc.length > 140 ? "..." : ""}`}
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between text-xs text-amber-400/80 group-hover:text-amber-400 font-medium">
-                <span className="flex items-center gap-1">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>{t(language, "view_details")}</span>
-                </span>
-                <span className="text-stone-600 font-mono text-[11px]">#{motif.id}</span>
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-2 border-t border-[var(--cloth-line)]">
+                <button
+                  onClick={() => toggleExpand(motif.id)}
+                  className="text-[12px] font-semibold text-[var(--soga)] hover:underline cursor-pointer bg-transparent border-none p-0"
+                >
+                  {isExpanded ? t(language, "hide_details") : t(language, "view_details")}
+                </button>
+
+                {isCulturallyRare && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--mahogany-tint)] text-[var(--mahogany)]">
+                    {t(language, "rare_badge")}
+                  </span>
+                )}
+
+                {isModelWeak && (
+                  <span className="text-[10.5px] text-[var(--on-cloth-faint)] italic text-right max-w-[170px] truncate">
+                    {t(language, "model_weak_note")}
+                  </span>
+                )}
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Motif Detail Modal */}
-      {activeModalMotif && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-6 md:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setActiveModalMotif(null)}
-              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-200 rounded-lg hover:bg-stone-800 transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-950/80 text-amber-300 border border-amber-800/60">
-                  <MapPin className="w-3 h-3 text-amber-400" />
-                  {activeModalMotif.region}
-                </span>
-                <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-800 text-stone-300 border border-stone-700">
-                  {activeModalMotif.island}
-                </span>
-                {activeModalMotif.is_weak_class && (
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    {t(language, "weak_class_badge")}
-                  </span>
-                )}
-              </div>
-
-              <h2 className="text-2xl md:text-3xl font-extrabold text-amber-200">
-                {language === "id" ? activeModalMotif.name_id : activeModalMotif.name_en}
-              </h2>
-              <p className="text-xs font-mono text-stone-400">
-                slug: {activeModalMotif.slug} | id: {activeModalMotif.id}
-              </p>
-            </div>
-
-            <div className="space-y-3 bg-stone-950/60 p-5 rounded-xl border border-stone-800/80">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-amber-400" />
-                {t(language, "philosophy")}
-              </h4>
-              <p className="text-sm md:text-base text-stone-300 leading-relaxed whitespace-pre-line">
-                {language === "id" ? activeModalMotif.description_id : activeModalMotif.description_en}
-              </p>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setActiveModalMotif(null)}
-                className="px-5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-sm font-semibold transition"
-              >
-                {t(language, "close_modal")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

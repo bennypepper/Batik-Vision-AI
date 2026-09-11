@@ -3,7 +3,7 @@
 import React from "react";
 import { AppLanguage } from "@/types/batik";
 import { t } from "@/lib/i18n";
-import { ShieldCheck, Cpu, Layers, RefreshCw, Eye } from "lucide-react";
+import { Lock } from "lucide-react";
 
 interface AboutSectionProps {
   language: AppLanguage;
@@ -11,81 +11,70 @@ interface AboutSectionProps {
 
 export const AboutSection: React.FC<AboutSectionProps> = ({ language }) => {
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8 py-4">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-100 tracking-tight">
+    <div className="w-full max-w-[760px] mx-auto pb-16 px-4">
+      {/* Hero Header */}
+      <div className="text-center pt-8 pb-4">
+        <h1 className="display text-2xl sm:text-3xl font-semibold text-[var(--on-canvas)] mb-2.5">
           {t(language, "about_title")}
-        </h2>
-        <p className="text-sm text-stone-400 max-w-2xl mx-auto">
+        </h1>
+        <p className="text-[13.5px] text-[var(--on-canvas-soft)] max-w-[620px] mx-auto leading-relaxed">
           {t(language, "about_desc")}
         </p>
       </div>
 
-      {/* Grid of Key Architectural Pillars */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Pillar 1: Double-Preprocessing Fix */}
-        <div className="bg-stone-900/80 rounded-2xl border border-stone-800 p-6 space-y-3 shadow-lg">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-            <RefreshCw className="w-5 h-5" />
-          </div>
-          <h3 className="text-base font-bold text-stone-200">
-            {language === "id" ? "Penyelesaian Double-Preprocessing" : "Double-Preprocessing Fix"}
-          </h3>
-          <p className="text-xs text-stone-400 leading-relaxed">
-            {t(language, "v3_p1")}
+      {/* Engineering Timeline */}
+      <div className="timeline my-8">
+        {/* Item 1 */}
+        <div className="t-item">
+          <h4 className="text-[14.5px] font-semibold text-[var(--on-canvas)] mb-1.5 flex items-center gap-2.5">
+            <span>{t(language, "v3_p1_title")}</span>
+            <span className="text-[10px] font-semibold text-[var(--on-canvas-faint)] border border-[var(--canvas-line-strong)] px-2 py-0.5 rounded-full">
+              {t(language, "v3_p1_tag")}
+            </span>
+          </h4>
+          <p className="text-[13px] text-[var(--on-canvas-soft)] leading-relaxed">
+            {t(language, "v3_p1_desc")}
           </p>
         </div>
 
-        {/* Pillar 2: Perceptual Hash Deduplication */}
-        <div className="bg-stone-900/80 rounded-2xl border border-stone-800 p-6 space-y-3 shadow-lg">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <h3 className="text-base font-bold text-stone-200">
-            {language === "id" ? "Deduplikasi Perceptual Hash" : "Perceptual Hash Deduplication"}
-          </h3>
-          <p className="text-xs text-stone-400 leading-relaxed">
-            {t(language, "v3_p2")}
+        {/* Item 2 */}
+        <div className="t-item">
+          <h4 className="text-[14.5px] font-semibold text-[var(--on-canvas)] mb-1.5">
+            {t(language, "v3_p2_title")}
+          </h4>
+          <p className="text-[13px] text-[var(--on-canvas-soft)] leading-relaxed">
+            {t(language, "v3_p2_desc")}
           </p>
         </div>
 
-        {/* Pillar 3: Focal Loss & Imbalance */}
-        <div className="bg-stone-900/80 rounded-2xl border border-stone-800 p-6 space-y-3 shadow-lg">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-            <Layers className="w-5 h-5" />
-          </div>
-          <h3 className="text-base font-bold text-stone-200">
-            {language === "id" ? "Focal Loss & Sample Weighting" : "Focal Loss & Effective Sample Weighting"}
-          </h3>
-          <p className="text-xs text-stone-400 leading-relaxed">
-            {t(language, "v3_p3")}
+        {/* Item 3 */}
+        <div className="t-item">
+          <h4 className="text-[14.5px] font-semibold text-[var(--on-canvas)] mb-1.5">
+            {t(language, "v3_p3_title")}
+          </h4>
+          <p className="text-[13px] text-[var(--on-canvas-soft)] leading-relaxed">
+            {t(language, "v3_p3_desc")}
           </p>
         </div>
 
-        {/* Pillar 4: Two-Stage YOLO Architecture */}
-        <div className="bg-stone-900/80 rounded-2xl border border-stone-800 p-6 space-y-3 shadow-lg">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-            <Eye className="w-5 h-5" />
-          </div>
-          <h3 className="text-base font-bold text-stone-200">
-            {language === "id" ? "Arsitektur Deteksi Dua Tahap" : "Two-Stage Detection Architecture"}
-          </h3>
-          <p className="text-xs text-stone-400 leading-relaxed">
-            {t(language, "v3_p4")}
+        {/* Item 4 */}
+        <div className="t-item">
+          <h4 className="text-[14.5px] font-semibold text-[var(--on-canvas)] mb-1.5">
+            {t(language, "v3_p4_title")}
+          </h4>
+          <p className="text-[13px] text-[var(--on-canvas-soft)] leading-relaxed">
+            {t(language, "v3_p4_desc")}
           </p>
         </div>
       </div>
 
-      {/* Zero-Backend Section */}
-      <div className="bg-gradient-to-br from-stone-900 to-stone-950 rounded-2xl border border-stone-800 p-6 md:p-8 space-y-3 shadow-xl">
-        <div className="flex items-center gap-2.5 text-amber-400">
-          <Cpu className="w-5 h-5" />
-          <h3 className="text-base font-bold text-stone-100">
-            {t(language, "zero_backend_title")}
-          </h3>
-        </div>
-        <p className="text-sm text-stone-300 leading-relaxed">
+      {/* Highlight Block: Zero-Backend */}
+      <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-lg p-5 sm:p-6 shadow-sm border border-[var(--cloth-line)]">
+        <h4 className="text-[15px] font-semibold text-[var(--on-cloth)] mb-2 flex items-center gap-2.5">
+          <Lock className="w-4 h-4 text-[var(--soga)] shrink-0" />
+          <span>{t(language, "zero_backend_title")}</span>
+        </h4>
+        <p className="text-[13px] text-[var(--on-cloth-soft)] leading-relaxed">
           {t(language, "zero_backend_desc")}
         </p>
       </div>

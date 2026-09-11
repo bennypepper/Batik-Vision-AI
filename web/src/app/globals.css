@@ -1,26 +1,129 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* The "dye field" - deep wedelan indigo, not generic near-black */
+  --canvas: #182430;
+  --canvas-deep: #111a23;
+  --canvas-line: rgba(237, 230, 216, 0.09);
+  --canvas-line-strong: rgba(237, 230, 216, 0.16);
+  --on-canvas: #EDE6D8;
+  --on-canvas-soft: #A6ADB6;
+  --on-canvas-faint: #6D7480;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* The "reserved cloth" - warm ivory, used for content surfaces */
+  --cloth: #F6EEE1;
+  --cloth-deep: #EFE4D2;
+  --cloth-line: rgba(36, 31, 22, 0.10);
+  --cloth-line-strong: rgba(36, 31, 22, 0.18);
+  --on-cloth: #241F16;
+  --on-cloth-soft: #6B6252;
+  --on-cloth-faint: #9C927E;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* One interactive accent: soga brown, one job only */
+  --soga: #A15A2E;
+  --soga-tint: rgba(161, 90, 46, 0.14);
+  --soga-deep: #7E4522;
+
+  /* Reserved heritage signal - separate meaning from soga */
+  --mahogany: #7A2E22;
+  --mahogany-tint: rgba(122, 46, 34, 0.14);
+
+  /* Swatch palette (pattern chips only) */
+  --indigo: #2E4A66;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--on-canvas);
+  font-family: var(--font-work-sans), sans-serif;
+  margin: 0;
+}
+
+.display {
+  font-family: var(--font-fraunces), serif;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================= BATIK BORDER STRIP ================= */
+.motif-strip {
+  height: 7px;
+  background: repeating-linear-gradient(115deg, var(--soga) 0 3px, transparent 3px 6px, var(--indigo) 6px 9px, transparent 9px 12px);
+  opacity: 0.55;
+}
+
+/* ================= SWATCH PATTERNS ================= */
+.swatch-1 {
+  background: repeating-linear-gradient(45deg, var(--soga) 0 5px, var(--cloth-deep) 5px 11px);
+}
+.swatch-2 {
+  background: radial-gradient(circle at 20% 25%, var(--indigo) 0 4px, transparent 4.5px),
+              radial-gradient(circle at 60% 60%, var(--indigo) 0 4px, transparent 4.5px),
+              radial-gradient(circle at 85% 20%, var(--indigo) 0 3px, transparent 3.5px),
+              var(--cloth-deep);
+}
+.swatch-3 {
+  background: repeating-linear-gradient(0deg, var(--mahogany) 0 2px, transparent 2px 11px),
+              repeating-linear-gradient(90deg, var(--mahogany) 0 2px, transparent 2px 11px),
+              var(--cloth-deep);
+}
+.swatch-4 {
+  background: repeating-linear-gradient(160deg, var(--indigo) 0 4px, transparent 4px 14px),
+              var(--cloth-deep);
+}
+.swatch-5 {
+  background: repeating-linear-gradient(70deg, var(--soga) 0 2px, var(--cloth-deep) 2px 8px);
+}
+
+/* ================= TIMELINE STYLING ================= */
+.timeline {
+  position: relative;
+  padding-left: 26px;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--canvas-line-strong);
+}
+.t-item {
+  position: relative;
+  padding-bottom: 26px;
+}
+.t-item::before {
+  content: "";
+  position: absolute;
+  left: -26px;
+  top: 3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--canvas-deep);
+  border: 2px solid var(--soga);
+}
+
+/* ================= FLASHCARD ANIMATION ================= */
+@keyframes flashcard {
+  0%, 100% {
+    box-shadow: none;
+  }
+  30% {
+    box-shadow: 0 0 0 3px var(--soga);
+  }
+}
+.flash {
+  animation: flashcard 1.4s ease;
+}
+
+/* Suppress dev indicators and route announcers to eliminate floating bubble artifacts */
+[data-nextjs-toast],
+nextjs-portal,
+#__next-build-watcher,
+#nextjs-dev-indicator {
+  display: none !important;
 }

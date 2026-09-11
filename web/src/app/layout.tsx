@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Work_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const workSans = Work_Sans({
+  variable: "--font-work-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Batik Vision AI v3 | Indonesian Batik Motifs Classification",
-  description: "Two-stage Indonesian batik motif classification powered by YOLO and EfficientNetV2S running directly in-browser via WebAssembly.",
+  title: "Batik Vision AI v3 | Indonesian Batik Motifs Recognition Engine",
+  description: "Two-stage Indonesian batik motif classification powered by YOLO and EfficientNetV2S running client-side via WebAssembly.",
 };
 
 export default function RootLayout({
@@ -25,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${fraunces.variable} ${workSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-stone-950 text-stone-100 selection:bg-amber-500 selection:text-stone-950">
+      <body className="min-h-full flex flex-col font-sans">
         {children}
       </body>
     </html>

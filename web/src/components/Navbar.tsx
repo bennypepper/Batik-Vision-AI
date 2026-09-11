@@ -3,7 +3,7 @@
 import React from "react";
 import { AppLanguage } from "@/types/batik";
 import { t } from "@/lib/i18n";
-import { Compass, Camera, History, Info, Globe } from "lucide-react";
+import { Camera, Compass, Clock, Info } from "lucide-react";
 
 interface NavbarProps {
   currentTab: "scanner" | "atlas" | "history" | "about";
@@ -19,110 +19,97 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLanguageChange,
 }) => {
   return (
-    <header className="sticky top-0 z-50 bg-stone-900/90 backdrop-blur-md border-b border-stone-800 text-stone-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="w-full bg-[var(--canvas-deep)] border-b border-[var(--canvas-line)]">
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-7 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Brand */}
         <div
-          className="flex items-center space-x-3 cursor-pointer select-none"
+          className="flex items-baseline gap-2.5 cursor-pointer select-none"
           onClick={() => onTabChange("scanner")}
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-950/40 border border-amber-500/30">
-            <svg
-              className="w-6 h-6 text-amber-100"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2" />
-              <line x1="12" y1="22" x2="12" y2="15.5" />
-              <polyline points="22 8.5 12 15.5 2 8.5" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-amber-100 leading-tight">
-              {t(language, "app_title")}
-            </h1>
-            <p className="text-xs text-stone-400 hidden sm:block">
-              {t(language, "app_tagline")}
-            </p>
-          </div>
+          <span className="display text-lg font-semibold italic text-[var(--on-canvas)]">
+            {t(language, "app_title")}
+          </span>
+          <span className="text-[11px] text-[var(--on-canvas-faint)] font-medium">
+            {t(language, "app_version")}
+          </span>
+          <span className="hidden lg:inline text-[11.5px] text-[var(--on-canvas-faint)] pl-3.5 border-l border-[var(--canvas-line-strong)]">
+            {t(language, "app_subtitle")}
+          </span>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="flex items-center space-x-1 sm:space-x-2">
+        {/* Navigation Tabs and Language Switch */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
           <button
             onClick={() => onTabChange("scanner")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+            className={`flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-md transition-colors border ${
               currentTab === "scanner"
-                ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                : "text-stone-400 hover:text-stone-200 hover:bg-stone-800/60"
+                ? "text-[var(--on-canvas)] bg-[var(--soga-tint)] border-[rgba(161,90,46,0.35)]"
+                : "text-[var(--on-canvas-soft)] border-transparent hover:bg-[rgba(237,230,216,0.05)]"
             }`}
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="w-3.5 h-3.5 shrink-0" />
             <span>{t(language, "nav_scanner")}</span>
           </button>
 
           <button
             onClick={() => onTabChange("atlas")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+            className={`flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-md transition-colors border ${
               currentTab === "atlas"
-                ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                : "text-stone-400 hover:text-stone-200 hover:bg-stone-800/60"
+                ? "text-[var(--on-canvas)] bg-[var(--soga-tint)] border-[rgba(161,90,46,0.35)]"
+                : "text-[var(--on-canvas-soft)] border-transparent hover:bg-[rgba(237,230,216,0.05)]"
             }`}
           >
-            <Compass className="w-4 h-4" />
+            <Compass className="w-3.5 h-3.5 shrink-0" />
             <span>{t(language, "nav_atlas")}</span>
           </button>
 
           <button
             onClick={() => onTabChange("history")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+            className={`flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-md transition-colors border ${
               currentTab === "history"
-                ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                : "text-stone-400 hover:text-stone-200 hover:bg-stone-800/60"
+                ? "text-[var(--on-canvas)] bg-[var(--soga-tint)] border-[rgba(161,90,46,0.35)]"
+                : "text-[var(--on-canvas-soft)] border-transparent hover:bg-[rgba(237,230,216,0.05)]"
             }`}
           >
-            <History className="w-4 h-4" />
+            <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>{t(language, "nav_history")}</span>
           </button>
 
           <button
             onClick={() => onTabChange("about")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+            className={`flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-md transition-colors border ${
               currentTab === "about"
-                ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                : "text-stone-400 hover:text-stone-200 hover:bg-stone-800/60"
+                ? "text-[var(--on-canvas)] bg-[var(--soga-tint)] border-[rgba(161,90,46,0.35)]"
+                : "text-[var(--on-canvas-soft)] border-transparent hover:bg-[rgba(237,230,216,0.05)]"
             }`}
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-3.5 h-3.5 shrink-0" />
             <span>{t(language, "nav_about")}</span>
           </button>
-        </nav>
 
-        {/* Language Switcher */}
-        <div className="flex items-center space-x-1 bg-stone-800/80 p-1 rounded-lg border border-stone-700/60">
-          <Globe className="w-3.5 h-3.5 text-stone-400 ml-1 mr-1" />
-          <button
-            onClick={() => onLanguageChange("id")}
-            className={`px-2 py-1 text-xs font-semibold rounded ${
-              language === "id"
-                ? "bg-amber-600 text-white shadow-sm"
-                : "text-stone-400 hover:text-stone-200"
-            }`}
-          >
-            ID
-          </button>
-          <button
-            onClick={() => onLanguageChange("en")}
-            className={`px-2 py-1 text-xs font-semibold rounded ${
-              language === "en"
-                ? "bg-amber-600 text-white shadow-sm"
-                : "text-stone-400 hover:text-stone-200"
-            }`}
-          >
-            EN
-          </button>
+          {/* Language Switch */}
+          <div className="flex ml-2 border border-[var(--canvas-line-strong)] rounded-md overflow-hidden">
+            <button
+              onClick={() => onLanguageChange("id")}
+              className={`text-[11.5px] font-semibold px-2.5 py-1.5 transition-colors ${
+                language === "id"
+                  ? "bg-[rgba(237,230,216,0.08)] text-[var(--on-canvas)]"
+                  : "text-[var(--on-canvas-faint)] hover:text-[var(--on-canvas-soft)]"
+              }`}
+            >
+              ID
+            </button>
+            <button
+              onClick={() => onLanguageChange("en")}
+              className={`text-[11.5px] font-semibold px-2.5 py-1.5 transition-colors ${
+                language === "en"
+                  ? "bg-[rgba(237,230,216,0.08)] text-[var(--on-canvas)]"
+                  : "text-[var(--on-canvas-faint)] hover:text-[var(--on-canvas-soft)]"
+              }`}
+            >
+              EN
+            </button>
+          </div>
         </div>
       </div>
     </header>

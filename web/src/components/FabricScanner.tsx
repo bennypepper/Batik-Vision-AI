@@ -7,7 +7,7 @@ import { RoiCropper } from "./RoiCropper";
 import { ClassificationResults } from "./ClassificationResults";
 import { detectFabricRegion } from "@/lib/yolo-detector";
 import { runInferenceOnCanvas } from "@/lib/classifier";
-import { Upload, Camera, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Upload, Camera, Loader2, AlertCircle, ArrowRight, Crop } from "lucide-react";
 
 interface FabricScannerProps {
   language: AppLanguage;
@@ -16,15 +16,18 @@ interface FabricScannerProps {
     predictions: PredictionResult[];
     inferenceTimeMs: number;
   }) => void;
+  onNavigateToAtlas?: (motifName: string) => void;
 }
 
 export const FabricScanner: React.FC<FabricScannerProps> = ({
   language,
   onSaveScanRecord,
+  onNavigateToAtlas,
 }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [initialBox, setInitialBox] = useState<BoundingBox | null>(null);
+  const [isManualCropping, setIsManualCropping] = useState(false);
   const [status, setStatus] = useState<"idle" | "detecting" | "cropping" | "classifying" | "done">("idle");
   const [predictions, setPredictions] = useState<PredictionResult[] | null>(null);
   const [croppedThumbnail, setCroppedThumbnail] = useState<string | null>(null);
@@ -49,7 +52,8 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
       setIsCameraActive(true);
     } catch (err) {
       console.error("Camera access failed:", err);
-      setErrorMsg(language === "id" ? "Gagal mengakses kamera. Periksa izin peramban." : "Failed to access camera. Check browser permissions.");
+      // Fallback: trigger file input if camera is not available or blocked
+      fileInputRef.current?.click();
     }
   };
 
@@ -108,6 +112,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
     setPredictions(null);
     setIsSaved(false);
     setErrorMsg(null);
+    setIsManualCropping(false);
     setStatus("detecting");
 
     const img = new Image();
@@ -127,8 +132,51 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
     };
   };
 
+  const executeClassificationOnBox = async (boxToCrop: BoundingBox) => {
+    if (!imageSrc) return;
+    setStatus("classifying");
+
+    const img = new Image();
+    img.src = imageSrc;
+    img.onload = async () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = boxToCrop.width;
+      canvas.height = boxToCrop.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.drawImage(
+        img,
+        boxToCrop.x,
+        boxToCrop.y,
+        boxToCrop.width,
+        boxToCrop.height,
+        0,
+        0,
+        boxToCrop.width,
+        boxToCrop.height
+      );
+
+      const thumbData = canvas.toDataURL("image/jpeg", 0.9);
+      setCroppedThumbnail(thumbData);
+
+      try {
+        // Stage 2: EfficientNetV2S CNN inference
+        const result = await runInferenceOnCanvas(canvas);
+        setPredictions(result.predictions);
+        setInferenceTimeMs(result.inferenceTimeMs);
+        setStatus("done");
+      } catch (err: any) {
+        console.error("Classification error:", err);
+        setErrorMsg(err?.message || "Classification failed");
+        setStatus("cropping");
+      }
+    };
+  };
+
   const handleConfirmCrop = async (croppedCanvas: HTMLCanvasElement) => {
     setStatus("classifying");
+    setIsManualCropping(false);
     const thumbData = croppedCanvas.toDataURL("image/jpeg", 0.9);
     setCroppedThumbnail(thumbData);
 
@@ -149,6 +197,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
     setImageSrc(null);
     setPredictions(null);
     setInitialBox(null);
+    setIsManualCropping(false);
     setStatus("idle");
     stopCamera();
   };
@@ -165,96 +214,93 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      {/* Intro Header */}
-      {status === "idle" && (
-        <div className="text-center space-y-2 py-4">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-100 tracking-tight">
-            {t(language, "scanner_title")}
-          </h2>
-          <p className="text-sm text-stone-400 max-w-xl mx-auto">
-            {t(language, "scanner_desc")}
-          </p>
+    <div className="w-full max-w-[1180px] mx-auto pb-12 px-4">
+      {/* Hero Header */}
+      <div className="text-center pt-8 pb-3 max-w-[760px] mx-auto">
+        <h1 className="display text-2xl sm:text-3xl font-semibold text-[var(--on-canvas)] mb-2.5">
+          {t(language, "scanner_title")}
+        </h1>
+        <p className="text-[13.5px] text-[var(--on-canvas-soft)] leading-relaxed">
+          {t(language, "scanner_desc")}
+        </p>
+      </div>
+
+      {/* Two-Stage Progress Indicator */}
+      <div className="flex justify-center items-center gap-2.5 my-6 text-[12px] text-[var(--on-canvas-faint)]">
+        <div
+          className={`flex items-center gap-2 ${
+            imageSrc ? "text-[var(--on-canvas)] font-semibold" : ""
+          }`}
+        >
+          <span
+            className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] border transition ${
+              imageSrc
+                ? "bg-[var(--soga)] border-[var(--soga)] text-white"
+                : "border-[var(--canvas-line-strong)]"
+            }`}
+          >
+            1
+          </span>
+          <span>{t(language, "step_yolo")}</span>
         </div>
-      )}
+        <ArrowRight className="w-3.5 h-3.5 text-[var(--canvas-line-strong)]" />
+        <div
+          className={`flex items-center gap-2 ${
+            predictions ? "text-[var(--on-canvas)] font-semibold" : ""
+          }`}
+        >
+          <span
+            className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] border transition ${
+              predictions
+                ? "bg-[var(--soga)] border-[var(--soga)] text-white"
+                : "border-[var(--canvas-line-strong)]"
+            }`}
+          >
+            2
+          </span>
+          <span>{t(language, "step_classifier")}</span>
+        </div>
+      </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-red-950/50 border border-red-800/60 text-red-300 text-sm flex items-center gap-2.5">
+        <div className="max-w-[760px] mx-auto mb-4 p-3.5 rounded-lg bg-[rgba(122,46,34,0.15)] border border-[rgba(122,46,34,0.35)] text-red-300 text-xs flex items-center gap-2.5">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Input Selection State (Idle) */}
-      {status === "idle" && !isCameraActive && (
-        <div className="space-y-4">
-          {/* Drag and Drop Zone */}
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-stone-700 hover:border-amber-500/80 bg-stone-900/50 hover:bg-stone-900/80 rounded-2xl p-10 text-center cursor-pointer transition-all duration-200 group flex flex-col items-center justify-center min-h-[260px]"
-          >
-            <div className="w-16 h-16 rounded-full bg-stone-800 group-hover:bg-amber-500/10 flex items-center justify-center text-stone-400 group-hover:text-amber-400 mb-4 transition border border-stone-700 group-hover:border-amber-500/30">
-              <Upload className="w-7 h-7" />
-            </div>
-            <h3 className="text-base font-semibold text-stone-200 group-hover:text-amber-200 mb-1">
-              {t(language, "upload_prompt")}
-            </h3>
-            <p className="text-xs text-stone-500">{t(language, "upload_sub")}</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-sm font-semibold border border-stone-700 transition flex items-center gap-2 shadow-sm"
-            >
-              <Upload className="w-4 h-4 text-amber-400" />
-              <span>{t(language, "btn_browse")}</span>
-            </button>
-            <button
-              onClick={startCamera}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-stone-950 text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-amber-950/40"
-            >
-              <Camera className="w-4 h-4" />
-              <span>{t(language, "btn_camera")}</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
       {/* Live Camera View */}
       {isCameraActive && (
-        <div className="bg-stone-900 p-4 rounded-2xl border border-stone-800 space-y-4 text-center">
-          <div className="relative rounded-xl overflow-hidden bg-black max-w-lg mx-auto aspect-[4/3]">
+        <div className="max-w-[760px] mx-auto bg-[var(--canvas-deep)] p-4 rounded-xl border border-[var(--canvas-line-strong)] space-y-4 text-center my-4">
+          <div className="relative rounded-lg overflow-hidden bg-black max-w-lg mx-auto aspect-[4/3]">
             <video
               ref={videoRef}
               autoPlay
               playsInline
               className="w-full h-full object-cover"
             />
-            {/* Guide overlay */}
-            <div className="absolute inset-0 border-2 border-dashed border-amber-400/60 m-8 rounded-lg pointer-events-none" />
+            <div className="absolute inset-0 border-2 border-dashed border-[var(--soga)] m-8 rounded-md pointer-events-none" />
           </div>
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={capturePhoto}
-              className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-sm rounded-xl shadow-lg transition flex items-center gap-2"
+              className="px-5 py-2.5 bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white font-semibold text-xs rounded-md transition flex items-center gap-2 cursor-pointer border-none"
             >
               <Camera className="w-4 h-4" />
               <span>{t(language, "btn_capture")}</span>
             </button>
             <button
               onClick={stopCamera}
-              className="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-sm rounded-xl transition"
+              className="px-4 py-2.5 bg-transparent border border-[var(--canvas-line-strong)] hover:bg-[rgba(237,230,216,0.05)] text-[var(--on-canvas-soft)] text-xs rounded-md transition cursor-pointer"
             >
               {t(language, "btn_stop_camera")}
             </button>
@@ -262,11 +308,51 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         </div>
       )}
 
-      {/* Processing State Indicator */}
+      {/* Dropzone (Idle State) */}
+      {status === "idle" && !isCameraActive && (
+        <div className="space-y-5">
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className="max-w-[760px] mx-auto bg-[var(--cloth)] text-[var(--on-cloth)] border-[1.5px] border-dashed border-[var(--soga)] rounded-[10px] py-11 px-5 text-center cursor-pointer transition hover:bg-[var(--cloth-deep)]"
+          >
+            <div className="w-[52px] h-[52px] rounded-full bg-[var(--soga-tint)] text-[var(--soga)] flex items-center justify-center mx-auto mb-4">
+              <Upload className="w-5 h-5" />
+            </div>
+            <h4 className="text-[15px] font-semibold text-[var(--on-cloth)] mb-1.5">
+              {t(language, "upload_prompt")}
+            </h4>
+            <p className="text-[12px] text-[var(--on-cloth-faint)]">
+              {t(language, "upload_sub")}
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-transparent border border-[var(--canvas-line-strong)] text-[var(--on-canvas)] text-[13px] font-medium px-5 py-2.5 rounded-md hover:bg-[rgba(237,230,216,0.05)] flex items-center gap-2 cursor-pointer transition"
+            >
+              <Upload className="w-3.5 h-3.5 text-[var(--on-canvas-soft)]" />
+              <span>{t(language, "btn_browse")}</span>
+            </button>
+            <button
+              onClick={startCamera}
+              className="bg-[var(--soga)] text-white text-[13px] font-semibold px-5 py-2.5 rounded-md hover:bg-[var(--soga-deep)] flex items-center gap-2 cursor-pointer transition border-none"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>{t(language, "btn_camera")}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Detecting / Classifying Loader */}
       {(status === "detecting" || status === "classifying") && (
-        <div className="p-8 text-center space-y-3 bg-stone-900/60 rounded-2xl border border-stone-800">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mx-auto" />
-          <p className="text-sm font-medium text-stone-200">
+        <div className="max-w-[760px] mx-auto py-12 px-6 text-center space-y-3 bg-[var(--canvas-deep)] rounded-xl border border-[var(--canvas-line-strong)]">
+          <Loader2 className="w-7 h-7 text-[var(--soga)] animate-spin mx-auto" />
+          <p className="text-sm font-medium text-[var(--on-canvas)]">
             {status === "detecting"
               ? t(language, "status_detecting_fabric")
               : t(language, "status_classifying")}
@@ -274,14 +360,68 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         </div>
       )}
 
-      {/* Interactive ROI Cropper (Stage 1 Complete, ready to crop) */}
-      {status === "cropping" && imageSrc && initialBox && (
+      {/* Stage 1 Complete: Preview with YOLO Bounding Box Overlay */}
+      {status === "cropping" && imageSrc && initialBox && !isManualCropping && (
+        <div className="max-w-[760px] mx-auto space-y-4">
+          <div className="relative rounded-lg overflow-hidden bg-stone-900 border border-[var(--cloth-line)]">
+            <img
+              src={imageSrc}
+              alt="Uploaded batik preview"
+              className="w-full h-auto block"
+            />
+            {/* Simulated / Real YOLO bounding box */}
+            <div
+              className="absolute border-2 border-dashed border-[var(--soga)] rounded pointer-events-none"
+              style={{
+                left: `${(initialBox.x / (initialBox.width + initialBox.x * 2 || 1)) * 100}%`,
+                top: `${(initialBox.y / (initialBox.height + initialBox.y * 2 || 1)) * 100}%`,
+                width: `${(initialBox.width / (initialBox.width + initialBox.x * 2 || 1)) * 100}%`,
+                height: `${(initialBox.height / (initialBox.height + initialBox.y * 2 || 1)) * 100}%`,
+              }}
+            >
+              <span className="absolute -top-6 left-0 bg-[var(--soga)] text-white text-[10.5px] font-semibold px-2 py-0.5 rounded-t whitespace-nowrap shadow">
+                {t(language, "fabric_detected")} · {(initialBox.confidence * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <button
+              onClick={handleScanAgain}
+              className="text-xs text-[var(--on-canvas-soft)] hover:text-[var(--on-canvas)] bg-transparent border-none cursor-pointer"
+            >
+              {t(language, "scan_again")}
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setIsManualCropping(true)}
+                className="bg-transparent border border-[var(--canvas-line-strong)] text-[var(--on-canvas-soft)] hover:text-[var(--on-canvas)] text-xs font-medium px-3.5 py-2 rounded-md transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Crop className="w-3.5 h-3.5" />
+                <span>{t(language, "stage1_label")}</span>
+              </button>
+
+              <button
+                onClick={() => executeClassificationOnBox(initialBox)}
+                className="bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white text-xs font-semibold px-4 py-2 rounded-md transition flex items-center gap-1.5 cursor-pointer border-none shadow-sm"
+              >
+                <span>{t(language, "btn_classify")}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Fine-Tuning ROI Cropper */}
+      {status === "cropping" && imageSrc && initialBox && isManualCropping && (
         <RoiCropper
           imageSrc={imageSrc}
           initialBox={initialBox}
           language={language}
           onConfirmCrop={handleConfirmCrop}
-          onReset={handleScanAgain}
+          onReset={() => setIsManualCropping(false)}
         />
       )}
 
@@ -294,6 +434,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
           language={language}
           onScanAgain={handleScanAgain}
           onSaveToHistory={handleSaveToHistory}
+          onNavigateToAtlas={onNavigateToAtlas}
           isSaved={isSaved}
         />
       )}
