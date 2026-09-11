@@ -11,7 +11,7 @@
       "island": "Bali",
       "is_weak_class": false,
       "description_id": "Batik Barong Bali terinspirasi dari Barong, makhluk mitologi Bali yang melambangkan kekuatan kebajikan (Dharma) dalam pertarungan abadi melawan Rangda (Adharma). Motif ini menampilkan figur singa bermahkota dengan detail ornamen yang rumit, sering dipadukan dengan motif api dan sulur-suluran khas seni ukir Bali. Batik Barong memiliki nilai sakral dan umumnya digunakan dalam upacara keagamaan Hindu-Bali sebagai simbol perlindungan spiritual dari roh jahat dan energi negatif.",
-      "description_en": "Inspired by Barong, the mythological lion of Bali symbolizing virtue and spiritual protection in Hindu-Balinese traditions."
+      "description_en": "Inspired by Barong, the mythological king of spirits in Balinese Hinduism representing the eternal cosmic force of virtue (Dharma) against Rangda (Adharma). The motif showcases the crowned lion-like spirit with intricate flame ornaments and sacred Balinese floral flourishes. Revered as a spiritual shield against malice, it is traditionally worn during sacred temple ceremonies and festive rites."
     },
     {
       "id": 1,
@@ -22,7 +22,7 @@
       "island": "Bali",
       "is_weak_class": false,
       "description_id": "Batik Merak Bali menggambarkan keindahan burung Merak yang sedang mengembangkan ekor indahnya, melambangkan keanggunan, kecantikan, dan kemewahan. Dalam tradisi Bali, motif ini sering dipadukan dengan ornamen floral seperti bunga kamboja dan dedaunan tropis yang dinamis, menciptakan komposisi yang penuh warna dan hidup. Batik ini populer digunakan dalam busana pesta dan upacara adat karena kesan mewah dan anggunnya, serta menjadi salah satu motif favorit wisatawan sebagai oleh-oleh khas Bali.",
-      "description_en": "Depicts the grace and beauty of the peacock, blending Balinese floral ornaments with vibrant ceremonial aesthetics."
+      "description_en": "Depicts the regal peacock unfurling its magnificent plumage, an enduring Balinese symbol of elegance, aesthetic beauty, and aristocratic poise. Often combined with frangipani blossoms and lush tropical greenery, this motif radiates vitality and vibrant chromatic harmony. It is widely worn during ceremonial celebrations, formal weddings, and performing arts."
     },
     {
       "id": 2,
@@ -33,7 +33,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Motif Ceplok merupakan salah satu pola batik tertua di Jawa, ditandai dengan susunan geometris yang berulang secara simetris dalam bentuk kotak, lingkaran, roset, atau bintang. Nama 'Ceplok' berasal dari kata Jawa yang merujuk pada potongan buah yang tampak simetris saat dibelah. Motif ini melambangkan keteraturan alam semesta, keseimbangan hidup, dan harmoni antara manusia dengan lingkungannya. Ceplok memiliki ratusan variasi seperti Ceplok Kasatrian, Ceplok Sriwedari, dan Ceplok Grompol, masing-masing dengan makna filosofis yang berbeda sesuai daerah asalnya.",
-      "description_en": "One of the oldest symmetrical geometric patterns in Java, representing universal balance and cosmic order."
+      "description_en": "One of the oldest symmetrical geometric patterns in Javanese textile heritage, composed of repeated rosettes, circles, squares, or star polygons. Derived from the Javanese concept of cut fruit showing radial symmetry, Ceplok signifies universal order, equilibrium, and cosmic balance. Historical variants like Ceplok Grompol and Sriwedari convey distinct blessings for communal harmony and marriage."
     },
     {
       "id": 3,
@@ -44,7 +44,7 @@
       "island": "Kalimantan",
       "is_weak_class": false,
       "description_id": "Batik Corak Insang adalah motif khas Melayu Pontianak, Kalimantan Barat, yang mengambil inspirasi dari bentuk insang dan sisik ikan sebagai cerminan kehidupan masyarakat pesisir sungai Kapuas. Pola garis-garis paralel yang menyerupai insang ikan disusun secara berulang dengan variasi warna cerah seperti merah, kuning, dan hijau. Motif ini melambangkan keharmonisan masyarakat Melayu dengan ekosistem sungai dan laut yang menjadi sumber kehidupan mereka, serta mengekspresikan harapan akan rezeki yang melimpah seperti ikan di sungai.",
-      "description_en": "Traditional Malay Pontianak motif inspired by fish gills and scales, honoring coastal Kapuas River ecology."
+      "description_en": "Traditional coastal motif from the Malay community of Pontianak along the majestic Kapuas River in West Kalimantan. Inspired by the undulating gills and scales of freshwater fish, the parallel Chevron bands celebrate the riverine ecosystem as the wellspring of sustenance. It symbolizes flowing prosperity, resilience against tidal currents, and deep respect for aquatic heritage."
     },
     {
       "id": 4,
@@ -55,7 +55,7 @@
       "island": "Nusantara",
       "is_weak_class": false,
       "description_id": "Batik Ikat Celup (juga dikenal sebagai tie-dye batik) merupakan teknik pembuatan batik yang menciptakan pola organik dan abstrak melalui proses mengikat bagian-bagian kain dengan tali atau karet sebelum mencelupkannya ke dalam pewarna. Berbeda dengan batik tulis atau cap yang menggunakan malam (lilin), teknik ikat celup menghasilkan gradasi warna yang mengalir bebas dan pola yang tidak dapat direplikasi secara persis. Setiap lembar kain ikat celup bersifat unik, menjadikannya karya seni tekstil satu-satunya di dunia. Teknik ini tersebar luas di seluruh Nusantara dan sangat populer di kalangan pengrajin muda.",
-      "description_en": "Organic tie-dye fabric technique producing free-flowing color gradients without the use of wax stencils."
+      "description_en": "Organic resist-dye textile artistry (popularly known as tie-dye or jumputan) crafted by binding selected sections of fabric with cords prior to dipping into natural dye baths. Lacking rigid wax stencils, Ikat Celup produces spontaneous chromatic ripples and ethereal tonal gradients. Each hand-tied piece is singular and irreproducible, celebrated across the archipelago as an expressive textile tradition."
     },
     {
       "id": 5,
@@ -66,7 +66,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Ondel-ondel mengangkat ikon budaya Betawi yang paling dikenal, yaitu boneka raksasa Ondel-ondel yang dipercaya sebagai penolak bala dan pelindung kampung dari gangguan roh halus. Motif ini menampilkan sepasang figur Ondel-ondel laki-laki dan perempuan dengan wajah khas berwarna merah dan putih, sering dikelilingi ornamen kembang kelapa dan kembang goyang. Batik ini menggunakan palet warna cerah dan mencolok khas pesisir Jakarta seperti merah, oranye, dan hijau terang, mencerminkan karakter masyarakat Betawi yang terbuka, ceria, dan ekspresif.",
-      "description_en": "Features the iconic Betawi giant protective figures surrounded by festive coconut flower motifs."
+      "description_en": "Celebrates the quintessential cultural icon of Betawi folk heritage from Jakarta: the towering Ondel-Ondel effigies crafted to ward off misfortune and safeguard communities. Displaying vibrant depictions of male and female pairs framed by glittering coconut flower ornaments (kembang kelapa), the pattern features vibrant crimson and emerald hues embodying the spirited, expressive hospitality of Betawi culture."
     },
     {
       "id": 6,
@@ -77,7 +77,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Megamendung adalah ikon khas Cirebon, Jawa Barat, yang menampilkan motif awan berarak dengan gradasi tujuh lapisan warna dari gelap ke terang. Gradasi ini melambangkan tujuh lapisan langit dalam kosmologi lokal serta tahapan menuju kebijaksanaan spiritual. Secara filosofis, Megamendung mengajarkan kesabaran dan kesejukan hati seorang pemimpin yang harus mampu meneduhkan rakyatnya seperti awan yang melindungi bumi dari terik matahari. Motif ini merupakan hasil akulturasi budaya Jawa dengan estetika Tiongkok yang dibawa oleh pedagang dari daratan Cina pada abad ke-14.",
-      "description_en": "Cirebon cloud formation with seven color gradations representing seven cosmological sky tiers and patience."
+      "description_en": "The iconic cloud formation of Cirebon, West Java, displaying rolling, tiered cloud billows with seven color gradations from deep indigo to ethereal white. These seven tiers symbolize the celestial heavens and stages of spiritual enlightenment. Philosophically, Megamendung counsels leaders to remain cool-headed, patient, and comforting, sheltering their people like clouds shielding the earth from scorching heat."
     },
     {
       "id": 7,
@@ -88,7 +88,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Pring Sedapur (Rumpun Bambu) adalah motif khas Magetan, Jawa Timur, yang menampilkan rumpun bambu dengan daun-daun yang melambai tertiup angin. Nama 'Pring Sedapur' secara harfiah berarti 'serumpun bambu', menggambarkan sifat bambu yang selalu tumbuh berkelompok dan tidak pernah berdiri sendiri. Filosofinya melambangkan kerukunan, gotong-royong, dan persatuan masyarakat yang hidup berdampingan secara harmonis. Bambu juga dikenal sebagai tanaman yang lentur namun kuat, sehingga motif ini turut melambangkan ketahanan dan ketenangan dalam menghadapi badai kehidupan.",
-      "description_en": "Depicts bamboo groves symbolizing communal solidarity, resilience, and harmony under life's challenges."
+      "description_en": "Hailing from Magetan at the foot of Mount Lawu in East Java, Pring Sedapur depicts swaying bamboo groves. In Javanese philosophy, bamboo never grows in isolation but thrives in dense colonies, embodying communal solidarity (gotong royong), resilience, and humble strength that bends gracefully under tempestuous winds without breaking."
     },
     {
       "id": 8,
@@ -99,7 +99,7 @@
       "island": "Kalimantan",
       "is_weak_class": false,
       "description_id": "Batik Dayak menampilkan motif Batang Garing (Pohon Kehidupan) yang merupakan simbol kosmologi suku Dayak di Kalimantan. Pohon Kehidupan digambarkan sebagai pohon sakral yang akarnya menghujam ke dunia bawah dan cabangnya menjulang ke langit, menghubungkan tiga alam: dunia bawah, dunia manusia, dan dunia atas. Motif ini melambangkan hubungan harmonis antara manusia, alam, dan Sang Pencipta (Ranying Hatalla) dalam kepercayaan Kaharingan. Batik Dayak sering menggunakan warna-warna alam seperti cokelat, hitam, dan merah bata yang diambil dari pewarna alami hutan Kalimantan.",
-      "description_en": "Portrays the sacred Dayak Batang Garing (Tree of Life) connecting cosmological realms in indigenous Kaharingan lore."
+      "description_en": "Depicts the sacred Batang Garing (Tree of Life) central to Dayak cosmology and Kaharingan philosophy in the heart of Borneo. With deep roots sinking into the underworld and branches ascending toward the celestial firmament, it links humanity, nature, and the supreme creator (Ranying Hatalla). Rendered in earthy forest pigments, it signifies sacred equilibrium and cosmic harmony."
     },
     {
       "id": 9,
@@ -110,7 +110,7 @@
       "island": "Sumatera",
       "is_weak_class": false,
       "description_id": "Batik Gajah Lampung menggambarkan gajah Sumatera yang merupakan hewan kebanggaan provinsi Lampung, terutama terkait dengan Taman Nasional Way Kambas sebagai pusat konservasi gajah. Motif gajah biasanya ditampilkan dengan detail yang megah, lengkap dengan ornamen kerajaan dan sering dipadukan dengan motif Siger, yaitu mahkota adat emas berbentuk tanduk kerbau yang menjadi simbol kehormatan wanita Lampung. Secara filosofis, motif ini melambangkan kekuatan, kebesaran, kebijaksanaan, dan kemakmuran, serta menjadi pengingat akan pentingnya menjaga kelestarian satwa langka Sumatera.",
-      "description_en": "Showcases the majestic Sumatran elephant paired with golden Siger crowns denoting wisdom and regional pride."
+      "description_en": "Honors the majestic Sumatran elephant native to the Way Kambas conservation rainforests of Lampung. Portrayed with ceremonial regalia and paired with the golden Siger horn headdress, this pattern symbolizes sovereign dignity, wisdom, noble endurance, and the urgent ecological imperative to preserve Sumatra's endangered wildlife."
     },
     {
       "id": 10,
@@ -121,7 +121,7 @@
       "island": "Jawa",
       "is_weak_class": true,
       "description_id": "Batik Lasem berasal dari kota Lasem di pesisir utara Jawa Tengah, yang dijuluki 'Tiongkok Kecil' karena sejarah panjang komunitas Tionghoa di sana sejak abad ke-15. Batik ini sangat dikenal dengan warna merah tua khasnya yang disebut 'abang getih pithik' (merah darah ayam), sebuah warna yang sulit ditiru oleh daerah lain karena menggunakan resep pewarna alami turun-temurun. Motif-motifnya menggabungkan estetika Jawa dan Tionghoa, menampilkan naga, burung hong, bunga seruni, dan flora-fauna laut yang kaya detail. Batik Lasem merupakan bukti nyata akulturasi budaya yang harmonis dan telah diakui sebagai salah satu warisan budaya tak benda Indonesia.",
-      "description_en": "Celebrated coastal red batik reflecting rich Sino-Javanese acculturation featuring dragons, phoenixes, and sea flora."
+      "description_en": "Renowned as the Sino-Javanese coastal masterpiece from Central Java, Lasem batik intertwines Chinese mythological icons such as the phoenix (Lok Can) and dragon with classic Javanese floral and geometric foliage. Dyed using natural mengkudu roots (producing the legendary 'getih pitik' chicken-blood red), it stands as a celebrated historical testament to centuries of harmonious cultural acculturation."
     },
     {
       "id": 11,
@@ -132,7 +132,7 @@
       "island": "Madura",
       "is_weak_class": false,
       "description_id": "Batik Mataketeran adalah motif khas pesisir Madura yang terkenal dengan penggunaan warna-warna tajam dan berani seperti merah menyala, kuning cerah, dan hijau tua yang mencerminkan karakter masyarakat Madura yang tegas dan ekspresif. Nama 'Mataketeran' sering diartikan sebagai mata burung perkutut, burung yang sangat dihargai dalam budaya Jawa dan Madura sebagai simbol kejelian, keindahan suara, dan keberuntungan. Motif ini menampilkan pola mata burung yang disusun berulang dengan ornamen daun dan bunga di sekelilingnya, dan sering digunakan dalam acara-acara adat Madura seperti karapan sapi dan upacara pernikahan.",
-      "description_en": "Coastal Madurese pattern inspired by dove eyes, expressing sharpness, expressiveness, and festive pride."
+      "description_en": "Distinctive Madurese coastal batik motif depicting bird-eye geometrics and vibrant coastal foliage. Reflecting the passionate, assertive temperament of the Madurese people, Mataketeran features dramatic contrasts of fiery reds, deep blues, and mustard yellows, celebrated for its bold freehand waxing technique and uninhibited creative vitality."
     },
     {
       "id": 12,
@@ -143,7 +143,7 @@
       "island": "Maluku",
       "is_weak_class": false,
       "description_id": "Batik Pala Maluku terinspirasi dari buah pala (Myristica fragrans), rempah legendaris yang menjadikan Kepulauan Maluku sebagai pusat perdagangan dunia selama berabad-abad dan pernah menjadi rebutan bangsa-bangsa Eropa. Motif ini menampilkan buah pala lengkap dengan fuli (selaput buah) berwarna merah yang menyelimuti biji, disusun secara dekoratif bersama daun dan ranting pohon pala. Secara filosofis, batik Pala melambangkan kemakmuran, kekayaan alam, dan kebanggaan sejarah Maluku sebagai 'Kepulauan Rempah' yang pernah menguasai perekonomian maritim global.",
-      "description_en": "Honors the legendary nutmeg spice that positioned Maluku as the historic center of world maritime commerce."
+      "description_en": "Commemorates the legendary spice heritage of the Maluku Banda Islands, the historic spice islands that reshaped global maritime trade. The pattern depicts split nutmeg fruits (pala) with crimson mace (fuli) nestled within glossy leaves, symbolizing sovereign abundance, fragrant nobility, and enduring pride in eastern Indonesian agricultural heritage."
     },
     {
       "id": 13,
@@ -154,7 +154,7 @@
       "island": "Nusa Tenggara",
       "is_weak_class": false,
       "description_id": "Batik Lumbung menggambarkan bangunan Lumbung Padi tradisional yang dikenal sebagai Uma Lengge di Bima atau Sambi di Lombok, sebuah struktur penyimpanan padi khas Nusa Tenggara Barat dengan atap berbentuk kerucut tinggi yang menjulang. Lumbung padi bukan sekadar tempat penyimpanan, melainkan simbol kesejahteraan, kemakmuran, dan ketahanan pangan masyarakat agraris NTB. Motif ini melambangkan rasa syukur kepada Tuhan atas hasil bumi yang melimpah, serta mengingatkan pentingnya menyimpan dan mengelola sumber daya dengan bijaksana untuk masa depan.",
-      "description_en": "Represents the conical traditional rice barns (Uma Lengge) symbolizing agricultural abundance and thrift."
+      "description_en": "From West Nusa Tenggara (Lombok and Sumbawa), this motif honors the traditional Lumbung (Uma Lengge) thatch-roofed rice granaries. Rising on sturdy stilts to protect the harvest, the granary embodies food security, collective foresight, and familial gratitude to the earth for agricultural prosperity."
     },
     {
       "id": 14,
@@ -165,7 +165,7 @@
       "island": "Papua",
       "is_weak_class": false,
       "description_id": "Batik Papua Asmat mengadopsi seni ukir suku Asmat yang terkenal di seluruh dunia dengan pola geometris yang tegas, simetris, dan penuh makna spiritual. Motif ini sering menggambarkan patung leluhur (Mbis), topeng ritual, dan simbol-simbol alam seperti buaya, burung kasuari, dan pohon sagu yang menjadi sumber kehidupan masyarakat Asmat. Setiap garis dan pola dalam ukiran Asmat memiliki makna sakral yang berkaitan dengan penghormatan kepada arwah nenek moyang dan siklus kehidupan-kematian. Batik Asmat biasanya menggunakan palet warna earthy seperti cokelat, hitam, putih, dan merah tanah.",
-      "description_en": "Sacred geometric tribal patterns derived from world-renowned Asmat woodcarvings and ancestor totems."
+      "description_en": "Draws from the profound woodcarving traditions of the Asmat people along the southwest coast of Papua. Featuring stylized spiraling ancestors, paddle shields, and hornbill talons in dramatic iron-red, ochre, and charcoal, the motif serves as a sacred bridge between the living community and the ancestral spirit realm."
     },
     {
       "id": 15,
@@ -176,7 +176,7 @@
       "island": "Papua",
       "is_weak_class": false,
       "description_id": "Batik Cendrawasih menampilkan burung Cendrawasih (Bird of Paradise), fauna endemik Papua yang terkenal dengan bulu-bulu ekornya yang panjang, berwarna-warni, dan memukau saat melakukan tarian kawin. Burung ini dianggap sebagai jelmaan dewata oleh masyarakat Papua dan menjadi simbol keindahan abadi serta kebanggaan identitas budaya Papua. Motif batik Cendrawasih biasanya menampilkan burung jantan dengan ekor mekar penuh dalam pose menari, dikelilingi oleh dedaunan tropis dan bunga anggrek hutan. Batik ini menjadi salah satu motif paling ikonik dari Papua dan sering digunakan dalam acara-acara resmi kenegaraan.",
-      "description_en": "Celebrates the Bird of Paradise, a sacred fauna embodying eternal beauty and Papuan cultural identity."
+      "description_en": "Celebrates the Bird of Paradise (Paradisaea apoda), the sacred emblem of Papua renowned for its shimmering plumage and majestic courtship display. Revered as the 'Bird of the Gods' fallen from paradise, the motif symbolizes celestial elegance, natural sovereignty, and the enchanting biological richness of Papuan primeval forests."
     },
     {
       "id": 16,
@@ -187,7 +187,7 @@
       "island": "Papua",
       "is_weak_class": false,
       "description_id": "Batik Tifa menggambarkan alat musik tradisional Tifa, sejenis gendang kayu panjang yang dilubangi dan ditutup kulit binatang pada salah satu ujungnya. Tifa merupakan instrumen sakral yang tidak terpisahkan dari kehidupan masyarakat Papua dan Maluku, digunakan dalam upacara adat, perayaan, tarian perang, dan penyambutan tamu kehormatan. Motif batik ini menampilkan Tifa dalam berbagai ukuran dan posisi, sering dipadukan dengan ornamen tribal dan pola-pola geometris khas Papua. Secara filosofis, Tifa melambangkan semangat persatuan, kegembiraan komunal, dan denyut nadi kehidupan masyarakat Papua yang selalu bersemangat.",
-      "description_en": "Features the ceremonial wooden hourglass drum integral to Papuan dances, rituals, and communal unity."
+      "description_en": "Features the sacred hourglass-shaped Tifa drum, the traditional percussion instrument crafted from hollowed hardwood and monitor lizard skin. Embellished with regional Papuan tribal patterns, it symbolizes rhythmic communal unity, festive joy, and the heartbeat that accompanies tribal ceremonies and welcoming dances."
     },
     {
       "id": 17,
@@ -198,7 +198,7 @@
       "island": "Jawa",
       "is_weak_class": true,
       "description_id": "Motif Merak Ngibing ('Merak yang Menari') merupakan kebanggaan batik Priangan, Jawa Barat, yang menggambarkan sepasang burung merak jantan dan betina sedang menari berhadapan dalam pose yang anggun dan simetris. Kata 'Ngibing' dalam bahasa Sunda berarti menari, merujuk pada gerakan merak jantan yang mengembangkan ekor indahnya untuk memikat pasangan. Motif ini melambangkan keindahan, keanggunan, cinta kasih, dan romantisme dalam kehidupan berumah tangga. Batik Merak Ngibing biasanya dikerjakan dengan teknik batik tulis halus menggunakan warna-warna lembut khas Priangan seperti biru indigo, cokelat soga, dan krem.",
-      "description_en": "Depicts a dancing peacock pair from West Java symbolizing romance, marital grace, and fine hand-drawn craft."
+      "description_en": "Originating from the Priangan highlands of West Java (Garut and Tasikmalaya), this motif captures a dancing peacock ('ngibing') amidst delicate Sundanese flora. It symbolizes graceful celebration, refined joy, and youthful beauty. (Note: Machine learning classification accuracy is currently limited on this class due to high intra-class stylistic diversity)."
     },
     {
       "id": 18,
@@ -209,7 +209,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Sekar atau Sekar Jagad berasal dari kata Jawa 'sekar' yang berarti bunga atau keindahan, dan 'jagad' yang berarti dunia. Motif ini menampilkan berbagai stilisasi bunga dan tumbuhan yang disusun dalam kompartemen-kompartemen organik yang saling berdampingan, menciptakan kesan peta keindahan dunia. Setiap kompartemen berisi motif yang berbeda, melambangkan keberagaman budaya dan keindahan alam semesta yang hidup berdampingan secara harmonis. Batik Sekar sering digunakan dalam upacara pernikahan Jawa sebagai simbol keindahan, kesuburan, kegembiraan hidup, dan harapan akan kehidupan yang penuh berkah.",
-      "description_en": "Ornate floral patchwork representing the manifold beauty of the universe and world diversity united."
+      "description_en": "A celebrated coastal motif from the Sekar Jagad lineage, meaning 'the floral map of the universe'. Composed of patchy floral clusters separated by organic borders resembling islands, it celebrates the kaleidoscopic diversity of flora across the archipelago, symbolizing unity in diversity and universal beauty."
     },
     {
       "id": 19,
@@ -220,7 +220,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Sidoluhur termasuk dalam kelompok motif 'Sido' yang bermakna 'jadi' atau 'menjadi', sementara 'Luhur' berarti mulia atau agung. Motif ini merupakan salah satu batik larangan keraton Surakarta dan Yogyakarta yang dahulu hanya boleh dikenakan oleh keluarga kerajaan dan bangsawan tinggi. Pola Sidoluhur menampilkan susunan geometris berisi ornamen gurda (sayap garuda), meru (gunung), dan berbagai simbol kemuliaan yang disusun simetris dalam kotak-kotak. Filosofinya merupakan doa dan harapan agar pemakainya menjadi pribadi yang luhur budinya, berwibawa, dihormati, dan selalu berada di jalan kebenaran.",
-      "description_en": "Prestigious royal Javanese pattern conveying prayers for nobility, dignity, and upright moral character."
+      "description_en": "A revered royal (Keraton) motif from Central Java, derived from 'Sido' (to become/continuous) and 'Luhur' (noble and exalted). Historically worn during matrimonial rites, it bestows prayers that the wearer will achieve noble character, spiritual dignity, and enduring honor in serving society."
     },
     {
       "id": 20,
@@ -231,7 +231,7 @@
       "island": "Jawa",
       "is_weak_class": true,
       "description_id": "Batik Sogan adalah gaya batik khas Surakarta (Solo) yang dikenali dari warna cokelat keemasan hangat yang berasal dari pewarna alami kulit pohon soga (Peltophorum pterocarpum). Warna sogan dianggap sebagai warna paling elegan dan sopan dalam tradisi batik Jawa, berbeda dari batik pesisir yang cenderung berwarna cerah. Motif-motif Sogan biasanya berupa pakem klasik keraton seperti Truntum, Sidomukti, atau Parang yang dikerjakan dengan teknik batik tulis halus dan penuh kesabaran. Batik Sogan mencerminkan kepribadian masyarakat Solo yang halus, penuh tata krama, dan menjunjung tinggi kehalusan budi pekerti dalam setiap aspek kehidupan.",
-      "description_en": "Refined court batik of Surakarta characterized by warm golden-brown dyes extracted from the soga tree bark."
+      "description_en": "The classic aristocratic palette and pattern of the Central Javanese royal courts (Surakarta and Yogyakarta), dyed exclusively with natural bark extract from the Soga tree (Peltophorum pterocarpum) alongside indigo. With deep ochre and chocolate hues, Sogan symbolizes humility, earthliness, and grounded wisdom. (Note: Model classification accuracy is currently developing due to subtle stylistic overlap with regional variants)."
     },
     {
       "id": 21,
@@ -242,7 +242,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Parang Solo merupakan salah satu motif larangan keraton tertua dan paling prestisius dalam tradisi batik Jawa, yang dahulu hanya boleh dikenakan oleh raja dan keluarga kerajaan Kasunanan Surakarta. Bentuk utama motif Parang adalah huruf 'S' yang saling jalin-menjalin tanpa putus secara diagonal, terinspirasi dari ombak samudera yang terus bergerak tanpa henti. Filosofinya melambangkan semangat pantang menyerah, kegigihan dalam menghadapi tantangan hidup, serta jalinan silaturahmi yang tidak boleh terputus antar generasi. Variasi Parang sangat beragam, mulai dari Parang Barong (paling besar, khusus raja) hingga Parang Klithik (lebih kecil, untuk pejabat).",
-      "description_en": "Historic continuous diagonal blade motif symbolizing unyielding perseverance like ocean waves beating the shore."
+      "description_en": "The legendary diagonal blade motif of the Surakarta Hadiningrat Court. The rhythmic, slanted S-curves evoke crashing ocean waves pounding against rocky sea cliffs. It symbolizes unyielding determination, relentless perseverance, continuous self-improvement, and royal valor in overcoming the storms of life."
     },
     {
       "id": 22,
@@ -253,7 +253,7 @@
       "island": "Sulawesi",
       "is_weak_class": false,
       "description_id": "Batik Lontara Sulawesi Selatan mengangkat aksara Lontara, sistem tulisan kuno suku Bugis-Makassar yang berbentuk kotak-kotak dengan garis melengkung di dalamnya, ke dalam motif kain yang artistik dan bermakna. Aksara Lontara digunakan untuk menulis naskah-naskah kuno seperti La Galigo, salah satu karya sastra terpanjang di dunia yang menceritakan mitologi Bugis. Motif ini melambangkan kecendekiaan, penghargaan terhadap ilmu pengetahuan, dan kebanggaan akan warisan intelektual leluhur Bugis-Makassar yang telah mengembangkan sistem navigasi, hukum maritim, dan perdagangan jauh sebelum era kolonial.",
-      "description_en": "Artistic integration of ancient Bugis-Makassar script celebrating literary scholarship and maritime heritage."
+      "description_en": "Inspired by the ancestral Lontara syllabic script and geometric motifs of the Bugis and Makassarese seafaring people of South Sulawesi. Reflecting deep philosophical principles of Siri' na Pacce (honor, dignity, and communal empathy), the sharp angular glyphs celebrate literacy, navigational courage, and maritime heritage."
     },
     {
       "id": 23,
@@ -264,7 +264,7 @@
       "island": "Sumatera",
       "is_weak_class": false,
       "description_id": "Batik Rumah Minang menampilkan ikon arsitektur paling terkenal dari Sumatera Barat, yaitu Rumah Gadang dengan atap Bagonjong yang menjulang runcing menyerupai tanduk kerbau. Rumah Gadang bukan sekadar tempat tinggal, melainkan simbol identitas suku Minangkabau yang menganut sistem matrilineal, di mana rumah menjadi pusat kehidupan keluarga besar dari garis keturunan ibu. Motif ini melambangkan perlindungan, kemegahan budaya, kehangatan kekeluargaan, dan peran sentral perempuan Minang dalam menjaga adat dan tradisi. Batik Rumah Minang sering dipadukan dengan ornamen ukiran khas Minang yang disebut 'Aka Bapilin' (akar berpilin).",
-      "description_en": "Features the horned Gadang house roof reflecting matrilineal heritage and communal protection."
+      "description_en": "Depicts the soaring swooping gables of the Minangkabau Rumah Gadang (buffalo horn roofs) framed by intricate Pucuak Rabuang (bamboo sprout) woodcarvings. Reflecting matrilineal wisdom, democratic consensus (musyawarah), and the principle that nature is the supreme teacher ('Alam Takambang Jadi Guru')."
     },
     {
       "id": 24,
@@ -275,7 +275,7 @@
       "island": "Sumatera",
       "is_weak_class": false,
       "description_id": "Batik Boraspati terinspirasi dari Boraspati Ni Tano (Cicak Tanah), makhluk mitologis dalam kepercayaan suku Batak Toba yang digambarkan menyerupai kadal atau cicak dan dipercaya sebagai penjaga bumi dan pelindung rumah. Boraspati Ni Tano dianggap sebagai roh penguasa tanah yang menjaga kesuburan dan melindungi penghuni rumah dari marabahaya. Motif ini biasanya menampilkan figur cicak yang distilisasi secara geometris bersama ornamen Gorga (ukiran tradisional Batak) yang penuh warna. Secara filosofis, batik Boraspati melambangkan kebijaksanaan, kekayaan bumi, perlindungan spiritual, dan hubungan sakral antara manusia dengan tanah leluhurnya.",
-      "description_en": "Portrays the mythical Boraspati earth lizard representing fertility, soil bounty, and Batak guardianship."
+      "description_en": "Honors the sacred Boraspati ni Tano (earth monitor lizard) of the Batak people around Lake Toba, North Sumatra. Frequently carved upon the wooden facades of Batak Gorga dwellings and woven in Ulos, Boraspati symbolizes agricultural fertility, maternal nurture, and enduring protection over family and granary."
     },
     {
       "id": 25,
@@ -286,7 +286,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Tambal memiliki tampilan visual yang unik karena terdiri dari potongan-potongan berbagai motif batik yang berbeda, dijahit atau digambar menjadi satu lembar kain seperti sebuah quilt atau tambal sulam. Kata 'Tambal' secara harfiah berarti menambal atau memperbaiki sesuatu yang rusak. Dalam tradisi Jawa kuno, kain batik Tambal digunakan sebagai selimut penyembuhan yang diselimutkan kepada orang sakit dengan harapan mempercepat kesembuhan melalui energi gabungan dari berbagai motif yang masing-masing membawa doa dan harapan tersendiri. Filosofi batik Tambal mengajarkan bahwa keindahan dan kekuatan justru lahir dari keberagaman yang disatukan.",
-      "description_en": "Traditional patchwork motif used historically as a healing cloth uniting diverse prayers and pattern blessings."
+      "description_en": "Derived from the Javanese word for 'patchwork', this motif combines diverse geometric remnants into a unified mosaic. Historically wrapped around ailing individuals, Tambal symbolizes restorative healing, repair of spiritual flaws, and the gathering of virtues to mend what has been broken."
     },
     {
       "id": 26,
@@ -297,7 +297,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Kawung merupakan salah satu motif batik tertua di Jawa yang telah ditemukan pada relief Candi Prambanan abad ke-9. Motifnya terdiri dari empat bulatan lonjong yang tersusun secara geometris menyerupai irisan buah aren (kolang-kaling) atau bunga teratai dilihat dari atas. Kawung termasuk motif larangan keraton Yogyakarta yang dahulu hanya diperuntukkan bagi sultan dan abdi dalem keraton. Secara filosofis, empat bulatan Kawung melambangkan empat arah mata angin dan empat unsur kehidupan, mengajarkan kesucian hati, pengendalian diri dari hawa nafsu, serta harapan agar manusia senantiasa berguna bagi sesama layaknya buah aren yang seluruh bagiannya bermanfaat.",
-      "description_en": "Ancient four-lobed aren fruit motif denoting the four cardinal directions, heart purity, and social utility."
+      "description_en": "One of the most ancient royal sacred motifs of the Yogyakarta Sultanate, formed by four-lobed intersecting elliptical spheres with a central seed, representing the fruit of the sugar palm (Aren / Kolang-kaling). Symbolizing the four cardinal directions and cosmic center, Kawung embodies immaculate purity, spiritual self-restraint, and righteous service to the community."
     },
     {
       "id": 27,
@@ -308,7 +308,7 @@
       "island": "Jawa",
       "is_weak_class": false,
       "description_id": "Batik Parang Yogyakarta, sering disebut Parang Rusak, merupakan motif larangan keraton Kesultanan Yogyakarta yang memiliki makna filosofis mendalam tentang perjuangan batin manusia. Kata 'Rusak' di sini bukan berarti hancur, melainkan merujuk pada kata 'tebing batu karang yang terjal' (parang = tebing), menggambarkan kekuatan alam yang dahsyat namun kokoh. Pola diagonal yang tak terputus melambangkan semangat perang melawan hawa nafsu dan godaan duniawi, serta keteguhan hati dalam membela kebenaran dan keadilan. Parang Rusak Barong merupakan varian terbesar dan paling agung yang khusus dikenakan Sultan, sementara varian yang lebih kecil diperuntukkan bagi kerabat keraton sesuai tingkatan pangkatnya.",
-      "description_en": "Grand royal Parang Rusak motif worn by Sultans, embodying spiritual battle against inner temptation."
+      "description_en": "The iconic sacred Parang Rusak motif of the Yogyakarta Royal Palace (Kraton Ngayogyakarta). Characterized by unbroken diagonal knife-like waves with Mlinjon diamond accents, it was historically reserved strictly for royalty (Awisan Dalem). It signifies the sovereign spirit mastering its primal impulses through continuous moral vigilance."
     }
   ]
 }

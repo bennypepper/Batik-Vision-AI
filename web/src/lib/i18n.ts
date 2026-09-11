@@ -83,6 +83,23 @@ export const DICTIONARY = {
     zero_backend_title: "Inferensi klien tanpa server (zero-backend)",
     zero_backend_desc: "Model berjalan langsung di dalam peramban web Anda menggunakan ONNX Runtime WebAssembly dan WebGL. Foto yang Anda unggah tidak pernah dikirim ke server eksternal manapun - privasi penuh, latensi instan.",
 
+    // Developer & Platform
+    web_overview_title: "Tentang Platform",
+    web_overview_desc: "Batik Vision AI adalah inisiatif pelestarian warisan budaya tekstil Nusantara melalui teknologi kecerdasan buatan. Menggabungkan deteksi kain YOLO dan klasifikasi tekstur EfficientNetV2S, platform ini bekerja 100% di sisi klien menggunakan WebAssembly untuk menjaga privasi mutlak pengguna.",
+    dev_title: "Tentang Pengembang",
+    dev_name: "Benny Pepper",
+    dev_role: "AI / Machine Learning Engineer & Full-Stack Developer",
+    dev_bio: "Fokus pada arsitektur computer vision, deep learning edge, dan sistem web modern. Berdedikasi melestarikan dan mendokumentasikan kekayaan motif batik Nusantara melalui rekayasa data yang teliti dan sistem terbuka.",
+    github_profile: "Profil GitHub",
+    github_repo: "Repositori Proyek",
+    theme_light: "Mode Terang (Mori)",
+    theme_dark: "Mode Gelap (Wedelan)",
+    toggle_theme: "Ganti Tema",
+    view_full_modal: "Buka Detail Penuh",
+    cultural_provenance: "Asal Daerah & Konteks Budaya",
+    visual_identity: "Karakteristik Visual",
+    deep_philosophy: "Makna Filosofis Mendalam",
+
     // Footer
     footer_text: "Batik Vision AI · Indonesian Batik Motifs Recognition Engine",
     footer_meta: "EfficientNetV2S · 28 kelas · WebAssembly/WebGL",
@@ -168,6 +185,23 @@ export const DICTIONARY = {
     v3_p4_desc: "YOLO detects the fabric area of garments in unconstrained photos before motif texture classification, cleanly separating 'finding the fabric' from 'recognizing the motif.'",
     zero_backend_title: "Client-side serverless inference (zero-backend)",
     zero_backend_desc: "The model runs directly in your web browser using ONNX Runtime WebAssembly and WebGL. Uploaded photos are never sent to any external server - complete privacy and zero latency.",
+
+    // Developer & Platform
+    web_overview_title: "About the Platform",
+    web_overview_desc: "Batik Vision AI is an open cultural preservation platform bridging traditional Indonesian textile heritage with cutting-edge edge AI. Powered by a two-stage inference pipeline (YOLO fabric localization and EfficientNetV2S texture classification), it delivers instant recognition of 28 batik motifs directly in your browser with zero server latency and absolute privacy.",
+    dev_title: "About the Developer",
+    dev_name: "Benny Pepper",
+    dev_role: "AI / Machine Learning Engineer & Full-Stack Developer",
+    dev_bio: "Specializing in computer vision architectures, edge deep learning, and modern web systems. Dedicated to preserving and documenting Indonesian textile heritage through rigorous data engineering and open platforms.",
+    github_profile: "GitHub Profile",
+    github_repo: "Project Repository",
+    theme_light: "Light Mode (Mori)",
+    theme_dark: "Dark Mode (Wedelan)",
+    toggle_theme: "Toggle Theme",
+    view_full_modal: "Open Full Details",
+    cultural_provenance: "Cultural Provenance & Regional Context",
+    visual_identity: "Visual Characteristics",
+    deep_philosophy: "Deep Cultural Philosophy",
 
     // Footer
     footer_text: "Batik Vision AI · Indonesian Batik Motifs Recognition Engine",

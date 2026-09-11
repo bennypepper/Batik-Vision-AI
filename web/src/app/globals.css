@@ -32,11 +32,44 @@
   --indigo: #2E4A66;
 }
 
+[data-theme="light"],
+:root.light {
+  /* The "cloth field" - unbleached mori linen */
+  --canvas: #F8F5EE;
+  --canvas-deep: #EDE6D8;
+  --canvas-line: rgba(36, 31, 22, 0.08);
+  --canvas-line-strong: rgba(36, 31, 22, 0.16);
+  --on-canvas: #1C1917;
+  --on-canvas-soft: #57534E;
+  --on-canvas-faint: #8C827A;
+
+  /* Content surfaces - crisp clean silk */
+  --cloth: #FFFFFF;
+  --cloth-deep: #FAF7F2;
+  --cloth-line: rgba(36, 31, 22, 0.08);
+  --cloth-line-strong: rgba(36, 31, 22, 0.15);
+  --on-cloth: #1C1917;
+  --on-cloth-soft: #57534E;
+  --on-cloth-faint: #8C827A;
+
+  /* Interactive accent - rich soga brown */
+  --soga: #934E24;
+  --soga-tint: rgba(147, 78, 36, 0.12);
+  --soga-deep: #703816;
+
+  /* Curatorial signal - mengkudu red */
+  --mahogany: #8F2A1E;
+  --mahogany-tint: rgba(143, 42, 30, 0.12);
+
+  --indigo: #203A58;
+}
+
 body {
   background: var(--canvas);
   color: var(--on-canvas);
   font-family: var(--font-work-sans), sans-serif;
   margin: 0;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 .display {

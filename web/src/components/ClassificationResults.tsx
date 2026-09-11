@@ -34,10 +34,9 @@ export const ClassificationResults: React.FC<ClassificationResultsProps> = ({
 
   const motifName = language === "id" ? top1.classInfo.name_id : top1.classInfo.name_en;
   const philosophy = language === "id" ? top1.classInfo.description_id : top1.classInfo.description_en;
-  const swatchClass = `swatch-${(top1.classInfo.id % 5) + 1}`;
 
   return (
-    <div className="w-full max-w-[760px] mx-auto space-y-4 pb-12">
+    <div className="w-full max-w-4xl mx-auto space-y-4 pb-12">
       {/* Top Utility Bar */}
       <div className="flex items-center justify-between text-xs text-[var(--on-canvas-faint)] px-1">
         <button
@@ -76,12 +75,18 @@ export const ClassificationResults: React.FC<ClassificationResultsProps> = ({
       </div>
 
       {/* Main Result Card on Warm Cloth */}
-      <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-lg p-5 sm:p-6 border border-[var(--cloth-line)] flex flex-col sm:flex-row gap-5 items-start">
+      <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-xl p-5 sm:p-7 border border-[var(--cloth-line)] shadow-sm flex flex-col sm:flex-row gap-5 items-start">
         {/* Swatch & Input Thumbnail */}
         <div className="flex sm:flex-col items-center gap-3 shrink-0">
-          <div className={`w-16 h-16 rounded-lg ${swatchClass}`} />
+          <div className="w-20 h-20 rounded-lg overflow-hidden border border-[var(--cloth-line-strong)] bg-stone-900 shadow-sm" title="Exemplar Pattern">
+            <img
+              src={`/motifs/${top1.classInfo.slug}.jpg`}
+              alt={motifName}
+              className="w-full h-full object-cover"
+            />
+          </div>
           {croppedThumbnail && (
-            <div className="w-16 h-16 rounded-lg overflow-hidden border border-[var(--cloth-line-strong)] bg-stone-900">
+            <div className="w-20 h-20 rounded-lg overflow-hidden border border-[var(--cloth-line-strong)] bg-stone-900 shadow-sm" title="Cropped Input Fabric">
               <img
                 src={croppedThumbnail}
                 alt={motifName}

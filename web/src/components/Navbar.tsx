@@ -3,13 +3,15 @@
 import React from "react";
 import { AppLanguage } from "@/types/batik";
 import { t } from "@/lib/i18n";
-import { Camera, Compass, Clock, Info } from "lucide-react";
+import { Camera, Compass, Clock, Info, Sun, Moon } from "lucide-react";
 
 interface NavbarProps {
   currentTab: "scanner" | "atlas" | "history" | "about";
   onTabChange: (tab: "scanner" | "atlas" | "history" | "about") => void;
   language: AppLanguage;
   onLanguageChange: (lang: AppLanguage) => void;
+  theme: "dark" | "light";
+  onThemeChange: (theme: "dark" | "light") => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,10 +19,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   language,
   onLanguageChange,
+  theme,
+  onThemeChange,
 }) => {
   return (
-    <header className="w-full bg-[var(--canvas-deep)] border-b border-[var(--canvas-line)]">
-      <div className="max-w-[1180px] mx-auto px-4 sm:px-7 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+    <header className="w-full bg-[var(--canvas-deep)] border-b border-[var(--canvas-line)] transition-colors">
+      <div className="w-full px-4 sm:px-8 lg:px-12 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Brand */}
         <div
           className="flex items-baseline gap-2.5 cursor-pointer select-none"
@@ -88,12 +92,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Language Switch */}
-          <div className="flex ml-2 border border-[var(--canvas-line-strong)] rounded-md overflow-hidden">
+          <div className="flex ml-1.5 border border-[var(--canvas-line-strong)] rounded-md overflow-hidden">
             <button
               onClick={() => onLanguageChange("id")}
-              className={`text-[11.5px] font-semibold px-2.5 py-1.5 transition-colors ${
+              className={`text-[11.5px] font-semibold px-2.5 py-1.5 transition-colors cursor-pointer ${
                 language === "id"
-                  ? "bg-[rgba(237,230,216,0.08)] text-[var(--on-canvas)]"
+                  ? "bg-[rgba(237,230,216,0.08)] text-[var(--on-canvas)] font-bold"
                   : "text-[var(--on-canvas-faint)] hover:text-[var(--on-canvas-soft)]"
               }`}
             >
@@ -101,15 +105,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => onLanguageChange("en")}
-              className={`text-[11.5px] font-semibold px-2.5 py-1.5 transition-colors ${
+              className={`text-[11.5px] font-semibold px-2.5 py-1.5 transition-colors cursor-pointer ${
                 language === "en"
-                  ? "bg-[rgba(237,230,216,0.08)] text-[var(--on-canvas)]"
+                  ? "bg-[rgba(237,230,216,0.08)] text-[var(--on-canvas)] font-bold"
                   : "text-[var(--on-canvas-faint)] hover:text-[var(--on-canvas-soft)]"
               }`}
             >
               EN
             </button>
           </div>
+
+          {/* Theme Switch */}
+          <button
+            onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
+            className="ml-1 p-2 rounded-md border border-[var(--canvas-line-strong)] text-[var(--on-canvas-soft)] hover:text-[var(--on-canvas)] hover:bg-[rgba(237,230,216,0.06)] transition-colors cursor-pointer"
+            title={theme === "dark" ? t(language, "theme_light") : t(language, "theme_dark")}
+            aria-label={t(language, "toggle_theme")}
+          >
+            {theme === "dark" ? (
+              <Sun className="w-3.5 h-3.5 text-[var(--soga)]" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-[var(--indigo)]" />
+            )}
+          </button>
         </div>
       </div>
     </header>
