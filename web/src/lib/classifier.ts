@@ -16,9 +16,13 @@ export async function runInferenceOnCanvas(
     ort.env.wasm.numThreads = 1;
     ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.29.0/dist/";
 
-    const session = await ort.InferenceSession.create(modelUrl, {
+    const sessionPromise = ort.InferenceSession.create(modelUrl, {
       executionProviders: ["wasm"],
     });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("ONNX session load timed out")), 5000)
+    );
+    const session: any = await Promise.race([sessionPromise, timeoutPromise]);
 
     const inputTensor = preprocessCanvasToFloat32Tensor(canvas, ort);
     const inputName = session.inputNames[0];

@@ -3,6 +3,7 @@
 import React from "react";
 import { ScanRecord, AppLanguage } from "@/types/batik";
 import { t } from "@/lib/i18n";
+import { getMotifRegion, getMotifIsland } from "@/lib/labels-data";
 import { ArrowRight, Trash2, Clock } from "lucide-react";
 
 interface ScanHistoryProps {
@@ -27,7 +28,7 @@ const SAMPLE_RECORDS: Array<{
     name: "Yogyakarta Kawung",
     slug: "Yogyakarta_Kawung",
     region: "Yogyakarta",
-    timeStr: { id: "Hari ini, 14:22 · Yogyakarta", en: "Today, 14:22 · Yogyakarta" },
+    timeStr: { id: "Hari ini, 14:22 · Yogyakarta (Jawa)", en: "Today, 14:22 · Yogyakarta (Java)" },
     confidence: 92.4,
     query: "Kawung",
   },
@@ -36,7 +37,7 @@ const SAMPLE_RECORDS: Array<{
     name: "Solo Parang",
     slug: "Solo_Parang",
     region: "Solo / Surakarta",
-    timeStr: { id: "Kemarin, 09:07 · Solo / Surakarta", en: "Yesterday, 09:07 · Solo / Surakarta" },
+    timeStr: { id: "Kemarin, 09:07 · Solo / Surakarta (Jawa)", en: "Yesterday, 09:07 · Solo / Surakarta (Java)" },
     confidence: 88.1,
     query: "Parang",
   },
@@ -45,7 +46,7 @@ const SAMPLE_RECORDS: Array<{
     name: "Ceplok",
     slug: "Ceplok",
     region: "Jawa Tengah",
-    timeStr: { id: "3 hari lalu, 18:45 · Jawa Tengah", en: "3 days ago, 18:45 · Central Java" },
+    timeStr: { id: "3 hari lalu, 18:45 · Jawa Tengah (Jawa)", en: "3 days ago, 18:45 · Central Java (Java)" },
     confidence: 95.0,
     query: "Ceplok",
   },
@@ -54,7 +55,7 @@ const SAMPLE_RECORDS: Array<{
     name: "Sogan",
     slug: "Sogan",
     region: "Solo / Surakarta",
-    timeStr: { id: "5 hari lalu, 11:30 · Solo / Surakarta", en: "5 days ago, 11:30 · Solo / Surakarta" },
+    timeStr: { id: "5 hari lalu, 11:30 · Solo / Surakarta (Jawa)", en: "5 days ago, 11:30 · Solo / Surakarta (Java)" },
     confidence: 61.7,
     query: "Sogan",
   },
@@ -130,7 +131,7 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
                       {name}
                     </div>
                     <div className="text-[12px] text-[var(--on-cloth-faint)] truncate mt-0.5">
-                      {dateStr} · {top.classInfo.region} ({top.classInfo.island})
+                      {dateStr} · {getMotifRegion(top.classInfo, language)} ({getMotifIsland(top.classInfo, language)})
                     </div>
                   </div>
 

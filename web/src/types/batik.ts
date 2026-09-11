@@ -4,7 +4,11 @@ export interface BatikClass {
   name_id: string;
   name_en: string;
   region: string;
+  region_id?: string;
+  region_en?: string;
   island: string;
+  island_id?: string;
+  island_en?: string;
   is_weak_class: boolean;
   description_id: string;
   description_en: string;

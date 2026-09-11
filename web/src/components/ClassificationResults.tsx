@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { PredictionResult, AppLanguage } from "@/types/batik";
 import { t } from "@/lib/i18n";
+import { getMotifRegion, getMotifIsland } from "@/lib/labels-data";
 import { MapPin, ChevronDown, ChevronUp, Bookmark, BookmarkCheck, ArrowLeft } from "lucide-react";
 
 interface ClassificationResultsProps {
@@ -110,7 +111,7 @@ export const ClassificationResults: React.FC<ClassificationResultsProps> = ({
           <div className="text-[12px] text-[var(--on-cloth-faint)] flex items-center gap-1 mb-2">
             <MapPin className="w-3.5 h-3.5 text-[var(--on-cloth-faint)] shrink-0" />
             <span>
-              {top1.classInfo.region} · {top1.classInfo.island}
+              {getMotifRegion(top1.classInfo, language)} · {getMotifIsland(top1.classInfo, language)}
             </span>
           </div>
 
@@ -157,7 +158,7 @@ export const ClassificationResults: React.FC<ClassificationResultsProps> = ({
                   <span className="text-[var(--on-cloth)]">
                     {candName}
                     <span className="text-[var(--on-cloth-faint)] text-[11px] ml-1.5">
-                      ({cand.classInfo.region})
+                      ({getMotifRegion(cand.classInfo, language)})
                     </span>
                   </span>
                   <span className="text-[var(--soga)] font-semibold tnum">

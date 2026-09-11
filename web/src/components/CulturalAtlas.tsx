@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { BatikClass, AppLanguage } from "@/types/batik";
-import { getAllMotifs, getAllIslands } from "@/lib/labels-data";
+import { getAllMotifs, getMotifRegion, getMotifIsland, getIslandOptions } from "@/lib/labels-data";
 import { t } from "@/lib/i18n";
 import { Search, MapPin, ChevronDown, ChevronUp, X, Sparkles, AlertTriangle } from "lucide-react";
 
@@ -22,7 +22,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
   const [selectedModalMotif, setSelectedModalMotif] = useState<BatikClass | null>(null);
 
   const allMotifs = useMemo(() => getAllMotifs(), []);
-  const islands = useMemo(() => getAllIslands(), []);
+  const islandOptions = useMemo(() => getIslandOptions(language), [language]);
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Sync initial query when navigated from Scanner or History
@@ -62,18 +62,26 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
   const filteredMotifs = useMemo(() => {
     return allMotifs.filter((m) => {
       // Island filter
-      if (selectedIsland !== "ALL" && m.island.toLowerCase() !== selectedIsland.toLowerCase()) {
-        return false;
+      if (selectedIsland !== "ALL") {
+        const motifIslandKey = m.island_id || m.island;
+        if (
+          motifIslandKey.toLowerCase() !== selectedIsland.toLowerCase() &&
+          m.island.toLowerCase() !== selectedIsland.toLowerCase()
+        ) {
+          return false;
+        }
       }
       // Query filter
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       const name = language === "id" ? m.name_id : m.name_en;
       const desc = language === "id" ? m.description_id : m.description_en;
+      const region = getMotifRegion(m, language);
+      const island = getMotifIsland(m, language);
       return (
         name.toLowerCase().includes(q) ||
-        m.region.toLowerCase().includes(q) ||
-        m.island.toLowerCase().includes(q) ||
+        region.toLowerCase().includes(q) ||
+        island.toLowerCase().includes(q) ||
         desc.toLowerCase().includes(q) ||
         m.slug.toLowerCase().includes(q)
       );
@@ -133,17 +141,17 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
           >
             {t(language, "all_islands")}
           </button>
-          {islands.map((isl) => (
+          {islandOptions.map((opt) => (
             <button
-              key={isl}
-              onClick={() => setSelectedIsland(isl)}
+              key={opt.key}
+              onClick={() => setSelectedIsland(opt.key)}
               className={`text-[12.5px] px-4 py-1.5 rounded-full border transition cursor-pointer ${
-                selectedIsland === isl
+                selectedIsland === opt.key
                   ? "bg-[var(--soga)] border-[var(--soga)] text-white font-semibold shadow-sm"
                   : "border-[var(--canvas-line-strong)] text-[var(--on-canvas-soft)] hover:bg-[rgba(237,230,216,0.05)]"
               }`}
             >
-              {isl}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -217,7 +225,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                   <div className="text-[12px] text-[var(--on-cloth-faint)] flex items-center gap-1 mb-3">
                     <MapPin className="w-3.5 h-3.5 text-[var(--soga)] shrink-0" />
                     <span className="truncate">
-                      {motif.region} · {motif.island}
+                      {getMotifRegion(motif, language)} · {getMotifIsland(motif, language)}
                     </span>
                   </div>
 
@@ -245,7 +253,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                           {t(language, "cultural_provenance")}
                         </span>
                         <p className="text-[12px] text-[var(--on-cloth-soft)]">
-                          {motif.region} ({motif.island})
+                          {getMotifRegion(motif, language)} ({getMotifIsland(motif, language)})
                         </p>
                       </div>
 
@@ -302,7 +310,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
               </button>
               <div className="absolute bottom-3.5 left-4">
                 <span className="text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded bg-black/60 backdrop-blur-md text-white">
-                  {selectedModalMotif.region} · {selectedModalMotif.island}
+                  {getMotifRegion(selectedModalMotif, language)} · {getMotifIsland(selectedModalMotif, language)}
                 </span>
               </div>
             </div>
@@ -337,7 +345,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                     {t(language, "region")}
                   </span>
                   <span className="text-[13px] font-semibold text-[var(--on-cloth)]">
-                    {selectedModalMotif.region}
+                    {getMotifRegion(selectedModalMotif, language)}
                   </span>
                 </div>
                 <div className="p-3.5 rounded-lg bg-[var(--cloth-deep)] border border-[var(--cloth-line)]">
@@ -345,7 +353,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                     {t(language, "island")}
                   </span>
                   <span className="text-[13px] font-semibold text-[var(--on-cloth)]">
-                    {selectedModalMotif.island}
+                    {getMotifIsland(selectedModalMotif, language)}
                   </span>
                 </div>
               </div>

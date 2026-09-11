@@ -15,8 +15,8 @@ const LOCAL_STORAGE_KEY_THEME = "batik_v3_theme";
 
 export default function HomePage() {
   const [currentTab, setCurrentTab] = useState<"scanner" | "atlas" | "history" | "about">("scanner");
-  const [language, setLanguage] = useState<AppLanguage>("id");
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [language, setLanguage] = useState<AppLanguage>("en");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
   const [historyRecords, setHistoryRecords] = useState<ScanRecord[]>([]);
   const [targetAtlasQuery, setTargetAtlasQuery] = useState<string | undefined>(undefined);
 
@@ -26,13 +26,16 @@ export default function HomePage() {
       const savedLang = localStorage.getItem(LOCAL_STORAGE_KEY_LANG) as AppLanguage | null;
       if (savedLang === "id" || savedLang === "en") {
         setLanguage(savedLang);
+      } else {
+        setLanguage("en");
       }
       const savedTheme = localStorage.getItem(LOCAL_STORAGE_KEY_THEME) as "dark" | "light" | null;
       if (savedTheme === "light" || savedTheme === "dark") {
         setTheme(savedTheme);
         document.documentElement.setAttribute("data-theme", savedTheme);
       } else {
-        document.documentElement.setAttribute("data-theme", "dark");
+        setTheme("light");
+        document.documentElement.setAttribute("data-theme", "light");
       }
       const savedHistory = localStorage.getItem(LOCAL_STORAGE_KEY_HISTORY);
       if (savedHistory) {

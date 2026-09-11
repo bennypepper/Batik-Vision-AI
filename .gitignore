@@ -12,6 +12,7 @@ env/
 *.h5
 *.keras
 *.tflite
+*.onnx
 
 # Large datasets
 data/raw_batik_v2.1/

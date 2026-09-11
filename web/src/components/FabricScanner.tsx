@@ -116,11 +116,10 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
     setStatus("detecting");
 
     const img = new Image();
-    img.src = dataUrl;
-    img.onload = async () => {
+    const handleLoaded = async () => {
       const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
+      canvas.width = img.naturalWidth || 640;
+      canvas.height = img.naturalHeight || 640;
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(img, 0, 0);
@@ -130,31 +129,45 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
       }
       setStatus("cropping");
     };
+
+    img.onload = handleLoaded;
+    img.src = dataUrl;
+    if (img.complete) {
+      handleLoaded();
+    }
   };
 
-  const executeClassificationOnBox = async (boxToCrop: BoundingBox) => {
+  const executeClassificationOnBox = async (boxToCrop?: BoundingBox | null) => {
     if (!imageSrc) return;
     setStatus("classifying");
 
     const img = new Image();
-    img.src = imageSrc;
-    img.onload = async () => {
+    const runInference = async () => {
+      const box = boxToCrop || {
+        x: 0,
+        y: 0,
+        width: img.naturalWidth || 480,
+        height: img.naturalHeight || 480,
+        label: "Fabric",
+        score: 1.0,
+      };
+
       const canvas = document.createElement("canvas");
-      canvas.width = boxToCrop.width;
-      canvas.height = boxToCrop.height;
+      canvas.width = Math.max(32, box.width);
+      canvas.height = Math.max(32, box.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
       ctx.drawImage(
         img,
-        boxToCrop.x,
-        boxToCrop.y,
-        boxToCrop.width,
-        boxToCrop.height,
+        box.x,
+        box.y,
+        box.width,
+        box.height,
         0,
         0,
-        boxToCrop.width,
-        boxToCrop.height
+        canvas.width,
+        canvas.height
       );
 
       const thumbData = canvas.toDataURL("image/jpeg", 0.9);
@@ -172,6 +185,12 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         setStatus("cropping");
       }
     };
+
+    img.onload = runInference;
+    img.src = imageSrc;
+    if (img.complete) {
+      runInference();
+    }
   };
 
   const handleConfirmCrop = async (croppedCanvas: HTMLCanvasElement) => {
