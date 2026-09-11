@@ -95,7 +95,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ language }) => {
                 href="https://github.com/bennypepper/CNN-Batik-Motifs-Detector"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--cloth-deep)] hover:bg-[rgba(36,31,22,0.08)] text-[var(--on-cloth)] text-[12px] font-medium border border-[var(--cloth-line-strong)] transition no-underline"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--cloth-deep)] hover:bg-[var(--canvas-deep)] text-[var(--on-cloth)] text-[12px] font-medium border border-[var(--cloth-line-strong)] transition no-underline"
               >
                 <Code className="w-3.5 h-3.5 text-[var(--soga)]" />
                 <span>{t(language, "github_repo")}</span>

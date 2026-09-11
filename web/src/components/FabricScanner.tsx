@@ -5,7 +5,7 @@ import { AppLanguage, BoundingBox, PredictionResult } from "@/types/batik";
 import { t } from "@/lib/i18n";
 import { RoiCropper } from "./RoiCropper";
 import { ClassificationResults } from "./ClassificationResults";
-import { detectFabricRegion } from "@/lib/yolo-detector";
+import { detectFabricRegion, getFabricPresets } from "@/lib/yolo-detector";
 import { runInferenceOnCanvas } from "@/lib/classifier";
 import { Upload, Camera, Loader2, AlertCircle, ArrowRight, Crop } from "lucide-react";
 
@@ -28,6 +28,8 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [initialBox, setInitialBox] = useState<BoundingBox | null>(null);
   const [naturalDimensions, setNaturalDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [framingMode, setFramingMode] = useState<"swatch" | "center">("swatch");
+  const [presets, setPresets] = useState<{ swatch: BoundingBox; center: BoundingBox } | null>(null);
   const [isManualCropping, setIsManualCropping] = useState(false);
   const [status, setStatus] = useState<"idle" | "detecting" | "cropping" | "classifying" | "done">("idle");
   const [predictions, setPredictions] = useState<PredictionResult[] | null>(null);
@@ -130,6 +132,8 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         // Stage 1: YOLO fabric ROI detection
         const detectedBox = await detectFabricRegion(canvas);
         setInitialBox(detectedBox);
+        setFramingMode(detectedBox.framingMode);
+        setPresets(detectedBox.presets);
       }
       setStatus("cropping");
     };
@@ -138,6 +142,16 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
     img.src = dataUrl;
     if (img.complete) {
       handleLoaded();
+    }
+  };
+
+  const handleSelectPreset = (mode: "swatch" | "center") => {
+    setFramingMode(mode);
+    if (presets) {
+      setInitialBox(presets[mode]);
+    } else if (naturalDimensions.width > 0 && naturalDimensions.height > 0) {
+      const p = getFabricPresets(naturalDimensions.width, naturalDimensions.height);
+      setInitialBox(p[mode]);
     }
   };
 
@@ -430,6 +444,48 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
       {/* Stage 1 Complete: Preview with YOLO Bounding Box Overlay */}
       {status === "cropping" && imageSrc && initialBox && !isManualCropping && (
         <div className="max-w-4xl mx-auto space-y-4">
+          {/* Preset Framing Quick-Toggles */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-xl bg-[var(--cloth)] border border-[var(--cloth-line)] shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-medium text-[var(--on-cloth-soft)] pl-1">
+                {language === "id" ? "Bidikan Pola:" : "Pattern Framing:"}
+              </span>
+              <div className="inline-flex rounded-lg p-1 bg-[var(--cloth-deep)] border border-[var(--cloth-line)]">
+                <button
+                  type="button"
+                  onClick={() => handleSelectPreset("swatch")}
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition cursor-pointer border-none flex items-center gap-1.5 ${
+                    framingMode === "swatch"
+                      ? "bg-[var(--soga)] text-white shadow-xs"
+                      : "text-[var(--on-cloth-soft)] hover:text-[var(--on-cloth)] bg-transparent"
+                  }`}
+                >
+                  <span>{t(language, "preset_full_swatch")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectPreset("center")}
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition cursor-pointer border-none flex items-center gap-1.5 ${
+                    framingMode === "center"
+                      ? "bg-[var(--soga)] text-white shadow-xs"
+                      : "text-[var(--on-cloth-soft)] hover:text-[var(--on-cloth)] bg-transparent"
+                  }`}
+                >
+                  <span>{t(language, "preset_focus_center")}</span>
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsManualCropping(true)}
+              className="bg-transparent border border-[var(--canvas-line-strong)] text-[var(--on-canvas)] hover:border-[var(--soga)] text-xs font-medium px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Crop className="w-3.5 h-3.5 text-[var(--soga)]" />
+              <span>{t(language, "btn_adjust_roi")}</span>
+            </button>
+          </div>
+
           <div className="relative rounded-lg overflow-hidden bg-stone-900 border border-[var(--cloth-line)]">
             <img
               src={imageSrc}
@@ -452,10 +508,14 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
             </div>
           </div>
 
-          {/* Framing Guidance Hint */}
+          {/* Contextual Framing Guidance Hint */}
           <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--cloth-deep)] border border-[var(--cloth-line)] text-[12.5px] text-[var(--on-cloth-soft)]">
             <Crop className="w-4 h-4 text-[var(--soga)] shrink-0" />
-            <span>{t(language, "framing_hint")}</span>
+            <span>
+              {framingMode === "swatch"
+                ? t(language, "hint_swatch_detected")
+                : t(language, "hint_garment_detected")}
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
@@ -466,23 +526,13 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
               {t(language, "scan_again")}
             </button>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={() => setIsManualCropping(true)}
-                className="bg-transparent border border-[var(--canvas-line-strong)] text-[var(--on-canvas)] hover:border-[var(--soga)] text-xs font-medium px-3.5 py-2 rounded-md transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <Crop className="w-3.5 h-3.5 text-[var(--soga)]" />
-                <span>{t(language, "btn_adjust_roi")}</span>
-              </button>
-
-              <button
-                onClick={() => executeClassificationOnBox(initialBox)}
-                className="bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white text-xs font-semibold px-4 py-2 rounded-md transition flex items-center gap-1.5 cursor-pointer border-none shadow-sm"
-              >
-                <span>{t(language, "btn_classify")}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              onClick={() => executeClassificationOnBox(initialBox)}
+              className="bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white text-xs font-semibold px-5 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer border-none shadow-sm"
+            >
+              <span>{t(language, "btn_classify")}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}

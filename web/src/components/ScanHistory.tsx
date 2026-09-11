@@ -115,7 +115,7 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
               return (
                 <div
                   key={rec.id || index}
-                  className="flex items-center gap-4 px-5 py-4 border-b border-[var(--cloth-line)] last:border-b-0 hover:bg-[rgba(36,31,22,0.02)] transition"
+                  className="flex items-center gap-4 px-5 py-4 border-b border-[var(--cloth-line)] last:border-b-0 hover:bg-[var(--cloth-deep)] transition"
                 >
                   {/* Swatch Image */}
                   <div className="w-12 h-12 rounded-lg overflow-hidden border border-[var(--cloth-line)] bg-stone-900 shrink-0">
@@ -152,7 +152,7 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
           : SAMPLE_RECORDS.map((sample) => (
               <div
                 key={sample.id}
-                className="flex items-center gap-4 px-5 py-4 border-b border-[var(--cloth-line)] last:border-b-0 hover:bg-[rgba(36,31,22,0.02)] transition"
+                className="flex items-center gap-4 px-5 py-4 border-b border-[var(--cloth-line)] last:border-b-0 hover:bg-[var(--cloth-deep)] transition"
               >
                 {/* Authentic Swatch */}
                 <div className="w-12 h-12 rounded-lg overflow-hidden border border-[var(--cloth-line)] bg-stone-900 shrink-0">

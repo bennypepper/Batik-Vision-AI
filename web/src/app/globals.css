@@ -1,35 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  /* The "dye field" - deep wedelan indigo, not generic near-black */
-  --canvas: #182430;
-  --canvas-deep: #111a23;
+  /* The "dye field" - deep wedelan indigo canvas */
+  --canvas: #111A24;
+  --canvas-deep: #0D151E;
   --canvas-line: rgba(237, 230, 216, 0.09);
   --canvas-line-strong: rgba(237, 230, 216, 0.16);
   --on-canvas: #EDE6D8;
   --on-canvas-soft: #A6ADB6;
   --on-canvas-faint: #6D7480;
 
-  /* The "reserved cloth" - warm ivory, used for content surfaces */
-  --cloth: #F6EEE1;
-  --cloth-deep: #EFE4D2;
-  --cloth-line: rgba(36, 31, 22, 0.10);
-  --cloth-line-strong: rgba(36, 31, 22, 0.18);
-  --on-cloth: #241F16;
-  --on-cloth-soft: #6B6252;
-  --on-cloth-faint: #9C927E;
+  /* Elevated content surfaces - refined wedelan slate, comfortable on eyes */
+  --cloth: #1A2634;
+  --cloth-deep: #141F2B;
+  --cloth-line: rgba(237, 230, 216, 0.10);
+  --cloth-line-strong: rgba(237, 230, 216, 0.18);
+  --on-cloth: #EDE6D8;
+  --on-cloth-soft: #A2ABB6;
+  --on-cloth-faint: #6A7380;
 
-  /* One interactive accent: soga brown, one job only */
-  --soga: #A15A2E;
-  --soga-tint: rgba(161, 90, 46, 0.14);
-  --soga-deep: #7E4522;
+  /* Interactive accent: warm soga terracotta */
+  --soga: #D67C3E;
+  --soga-tint: rgba(214, 124, 62, 0.16);
+  --soga-deep: #B45E26;
 
-  /* Reserved heritage signal - separate meaning from soga */
-  --mahogany: #7A2E22;
-  --mahogany-tint: rgba(122, 46, 34, 0.14);
+  /* Reserved heritage signal: mengkudu red */
+  --mahogany: #C04E40;
+  --mahogany-tint: rgba(192, 78, 64, 0.18);
 
   /* Swatch palette (pattern chips only) */
-  --indigo: #2E4A66;
+  --indigo: #3D6288;
 }
 
 [data-theme="light"],
