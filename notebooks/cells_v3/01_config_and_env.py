@@ -19,23 +19,26 @@ np.random.seed(SEED)
 tf.random.set_seed(SEED)
 
 # Detect runtime environment paths
-KAGGLE_DATASET = Path("/kaggle/input/datasets/fisheightcharacter/indonesian-batik-dataset-enhanced-and-cleaned/dataset")
-LOCAL_DATASET = Path(r"D:\Personal Projects\Computer Vision-ML Projects\Batik Motifs Detector v2\Batik_dataset\dataset")
-REPO_DATASET = Path("data/dataset")
+def auto_detect_dataset_dir() -> tuple[str, str]:
+    kaggle_input = Path("/kaggle/input")
+    if kaggle_input.exists():
+        for p in kaggle_input.rglob("*"):
+            if p.is_dir() and (p / "Bali_Barong").exists():
+                return str(p), "/kaggle/working"
 
-if KAGGLE_DATASET.exists():
-    DATASET_DIR = str(KAGGLE_DATASET)
-    OUTPUT_DIR = "/kaggle/working"
-elif LOCAL_DATASET.exists():
-    DATASET_DIR = str(LOCAL_DATASET)
-    OUTPUT_DIR = "./outputs/v3_train"
-elif REPO_DATASET.exists():
-    DATASET_DIR = str(REPO_DATASET)
-    OUTPUT_DIR = "./outputs/v3_train"
-else:
-    DATASET_DIR = "./dataset"
-    OUTPUT_DIR = "./outputs/v3_train"
+    local_paths = [
+        Path(r"D:\Personal Projects\Computer Vision-ML Projects\Batik Motifs Detector v2\Batik_dataset\dataset"),
+        Path("data/dataset"),
+        Path("./dataset"),
+    ]
+    for lp in local_paths:
+        if lp.exists() and (lp / "Bali_Barong").exists():
+            return str(lp), "./outputs/v3_train"
 
+    return "./dataset", "./outputs/v3_train"
+
+
+DATASET_DIR, OUTPUT_DIR = auto_detect_dataset_dir()
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 MODEL_PATH = os.path.join(OUTPUT_DIR, "best_batik_model_v3.keras")
