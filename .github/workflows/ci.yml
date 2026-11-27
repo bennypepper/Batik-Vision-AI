@@ -34,11 +34,13 @@ jobs:
 
       - name: Verify headless Colab v4 CLI syntax & help
         run: |
-          python -m py_compile scripts/train_v4_colab.py
+          python -m py_compile scripts/train_v4_colab.py scripts/train_v4_benchmark_colab.py
           python scripts/train_v4_colab.py --help
 
       - name: Run pytest suite
-        run: pytest tests/ -v
+        env:
+          PYTHONPATH: .
+        run: python -m pytest tests/ -v
 
   web-ci:
     name: Web App (Node 22)

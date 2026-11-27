@@ -100,11 +100,19 @@ def build_labels_registry(labels_txt_path: str | None = None, output_path: str |
     try:
         from src.utils.data import BATIK_INFO, REGION_MAP, WEAK_CLASSES
     except ImportError:
-        from archive.v2_legacy.streamlit_app.utils.data import (
-            BATIK_INFO,
-            REGION_MAP,
-            WEAK_CLASSES,
-        )
+        try:
+            from archive.v2_legacy.streamlit_app.utils.data import (
+                BATIK_INFO,
+                REGION_MAP,
+                WEAK_CLASSES,
+            )
+        except ImportError:
+            existing_json = os.path.join(repo_root, "models", "labels.json")
+            with open(existing_json, "r", encoding="utf-8") as jf:
+                existing = json.load(jf)
+            BATIK_INFO = {c["slug"]: c.get("description_id", "") for c in existing.get("classes", [])}
+            REGION_MAP = {c["slug"]: c.get("region", "Indonesia") for c in existing.get("classes", [])}
+            WEAK_CLASSES = {c["slug"] for c in existing.get("classes", []) if c.get("is_weak_class")}
 
     with open(labels_txt_path, "r", encoding="utf-8") as f:
         slugs = [line.strip() for line in f if line.strip()]
