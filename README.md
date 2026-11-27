@@ -1,6 +1,6 @@
 # Batik Vision AI: Two-Stage Indonesian Batik Motifs Recognition Engine
 
-Batik Vision AI is a computer vision platform designed to preserve, document, and classify 28 traditional Indonesian batik motifs. The system combines fabric localization via YOLO with high-resolution texture classification via EfficientNetV2S, executed entirely client-side using WebAssembly and WebGL.
+Batik Vision AI is a computer vision platform designed to preserve, document, and classify 28 traditional Indonesian batik motifs. The system combines client-side adaptive fabric localization (with Stage-1 ONNX garment segmentation support) and aspect-preserving multi-patch texture classification via EfficientNetV2S, executed entirely inside a browser Web Worker using ONNX Runtime Web (WebGPU / WebGL / self-hosted WebAssembly).
 
 ## System Architecture
 
@@ -9,48 +9,47 @@ Batik Vision AI is a computer vision platform designed to preserve, document, an
                                         │
                                         ▼
                    ┌──────────────────────────────────────────┐
-                   │   Stage 1: Fabric Localization (YOLO)    │
-                   │  - ROI detection and framing guidance    │
-                   │  - Boundary edge gradient energy test    │
-                   │  - Full Swatch vs Focus Center presets   │
+                   │   Stage 1: Adaptive Fabric Localization  │
+                   │  - 256px resolution-normalized 6x6 grid  │
+                   │    Laplacian texture saliency detector   │
+                   │  - Full Swatch, Center & Adaptive ROIs   │
+                   │  - Touch-friendly manual ROI cropper     │
                    └────────────────────┬─────────────────────┘
                                         │
                                         ▼
                    ┌──────────────────────────────────────────┐
-                   │ Stage 2: Motif Texture Classifier (CNN)  │
+                   │ Stage 2: Multi-Patch Motif Classifier    │
+                   │  - 3 aspect-preserving 1:1 square tiles  │
                    │  - Backbone: Fine-Tuned EfficientNetV2S  │
-                   │  - Input: 224x224x3 float32 [0, 255]     │
-                   │  - Internal Rescaling: [-1, 1]           │
-                   │  - Output: 28-class probability vector   │
+                   │  - Internal Rescaling: [0,255] -> [-1,1] │
+                   │  - Entropy-weighted voting + OOD check   │
                    └────────────────────┬─────────────────────┘
                                         │
                                         ▼
                    ┌──────────────────────────────────────────┐
-                   │    Zero-Backend Client-Side Execution    │
-                   │  - ONNX Runtime WebAssembly & WebGL      │
-                   │  - Zero server transfer / complete privacy│
-                   │  - Local history & Cultural Atlas viewer │
+                   │   Zero-Backend Client-Side Web Worker    │
+                   │  - ONNX Runtime WebGPU / WebGL / WASM    │
+                   │  - Self-hosted /ort/ WASM (no CDN dep)   │
+                   │  - Cache API persistence & Cultural Atlas│
                    └──────────────────────────────────────────┘
 ```
 
-## Architectural Improvements: v2 to v3
+## Architectural Improvements: v2 → v3 → v4 Pipeline
 
 ### 1. Elimination of Double Preprocessing
-In v2, input images underwent double normalization: the preprocessing function scaled raw pixels from `[0, 255]` to `[-1, 1]`, and the Keras model internally applied a second normalization layer, compressing dynamic range to `[-1.008, -0.992]`. In v3, `EfficientNetV2S` is instantiated with `include_preprocessing=False` and a single, explicit internal `Rescaling(scale=1.0/127.5, offset=-1.0)` layer that accepts raw `[0, 255]` float32 tensors.
+In v2, input images underwent double normalization (`[0, 255]` → `[-1, 1]` twice, collapsing dynamic range to `[-1.008, -0.992]`). In v3/v4, `EfficientNetV2S` is instantiated with `include_preprocessing=False` and a single explicit internal `Rescaling(scale=1.0/127.5, offset=-1.0)` layer accepting raw `[0, 255]` `float32` tensors.
 
-### 2. Perceptual Hash Deduplication
-A comprehensive audit using 64-bit difference hashing (dHash with Hamming distance threshold <= 4) identified 799 duplicate and near-duplicate image pairs across splits and folds in the dataset. Deduplication eliminated data leakage between training and validation sets, ensuring valid generalization metrics.
+### 2. Leak-Free Deduplication & Visual Cluster Splitting
+64-bit difference hashing (dHash) with cross-class conflict quarantine (`scripts/audit_dataset_leakage.py`) and optional DINOv2 cosine-similarity clustering (`scripts/train_v4_colab.py --use-dinov2-clustering`) group near-duplicate and multi-angle garment shots into `GroupStratifiedKFold` clusters so identical fabrics never leak across train/validation/test splits.
 
-### 3. Class Imbalance Handling: Focal Loss and Sample Weighting
-Minority classes (such as Priangan Merak Ngibing and Sogan) suffered from high error rates in v2. Version 3 incorporates:
-- Categorical Focal Loss with focusing parameter gamma = 2.0.
-- Effective Number of Samples weighting based on (1 - beta) / (1 - beta^n) with beta = 0.999.
+### 3. Domain-Safe Augmentations & Calibrated Class Weighting
+`src/ml/augmentations.py` keeps raw high-resolution `uint8` RGB frames through Albumentations (cropping before resizing) and protects batik-specific semantics: horizontal flips are disabled for orientation-sensitive motifs (`Solo_Parang`, `Yogyakarta_Parang`, `Sulawesi_Selatan_Lontara`), hue jitter is bounded (`<= 5`) to protect dye-defined classes (`Sogan`, `Lasem`), and `CategoricalCrossentropy(label_smoothing=0.05)` is paired with capped Effective Number weights (`max <= 3.0`) + post-hoc Temperature Scaling (`src/ml/calibration.py`) and Out-Of-Distribution (OOD) rejection.
 
-### 4. Two-Stage Fabric Localization Pipeline
-Rather than forcing raw uncurated photographs directly into a texture classifier, Stage 1 uses YOLO fabric detection to isolate textile regions and calculate border spatial gradient energy. Close-up fabric swatches are automatically framed at 100% full pattern, while garments on models or mannequins default to 50% central focus with manual ROI fine-tuning capabilities.
+### 4. Resolution-Normalized Stage-1 Localization & Multi-Patch Voting
+Stage 1 (`web/src/lib/yolo-detector.ts`) normalizes images to `256px` and computes a `6×6` grid of Laplacian texture energy to locate both flat swatches and off-center garments. Stage 2 (`web/src/lib/classifier.ts`) extracts 3 aspect-preserving 1:1 square tiles from the ROI and merges predictions via inverse-entropy weighted voting — eliminating 16:9→224×224 geometric squashing.
 
-### 5. Client-Side WebAssembly Execution
-The trained EfficientNetV2S model is exported to ONNX format with FP16 weights (`batik_model_v3.onnx`) and evaluated directly inside the browser using ONNX Runtime Web. User photos are never uploaded to remote servers, eliminating hosting infrastructure costs and ensuring data privacy.
+### 5. Dedicated Web Worker + Self-Hosted ONNX Runtime Web
+Inference runs off the main thread in `web/src/lib/inference.worker.ts` using `executionProviders: ["webgpu", "webgl", "wasm"]`, self-hosted `/ort/` WASM assets, explicit tensor disposal, Cache API persistence, download progress reporting, and zero silent fake fallbacks.
 
 ## Supported Batik Motifs (28 Classes)
 
@@ -102,18 +101,22 @@ Batik-Vision-AI/
 │   └── tsconfig.json
 ├── src/
 │   └── ml/                          # Core ML pipeline modules
-│       ├── pipeline.py              # EfficientNetV2S architecture and weighting
-│       └── losses.py                # Categorical focal loss implementation
+│       ├── pipeline.py              # EfficientNetV2S architecture, cosine warmup & capped weights
+│       ├── losses.py                # Calibrated CCE + Categorical focal loss
+│       ├── augmentations.py         # Domain-safe uint8 Albumentations pipeline
+│       └── calibration.py           # Temperature scaling, ECE & OOD detector
 ├── notebooks/
-│   ├── batik_motifs_v3_train.ipynb  # End-to-end Kaggle training notebook
-│   └── cells_v3/                    # Modular Python training cells
+│   ├── batik_motifs_v3_train.ipynb  # Modular training notebook
+│   └── cells_v3/                    # Python training cells
 ├── models/
 │   ├── labels.json                  # Comprehensive multilingual labels registry
-│   └── labels.txt                   # Ordered class list
+│   └── labels.txt                   # Ordered 28-class list
 ├── results/
-│   └── v3_results/                  # Kaggle evaluation charts, reports, and weights
-├── scripts/                         # Dataset hygiene and ONNX conversion utilities
-├── tests/                           # Pytest automated test suite
+│   ├── v2.5/                        # Historical v2.5 evaluation baseline
+│   └── v3_dataset_audit.csv         # Perceptual hash deduplication audit
+├── scripts/                         # Leakage audit, headless Colab v4 trainer & ONNX export/parity
+├── tests/                           # Pytest automated ML test suite
+├── .github/workflows/ci.yml         # Python 3.11 + Node 22 GitHub Actions CI
 ├── docs/                            # Architectural specifications and plans
 ├── archive/
 │   ├── v1/                          # Legacy v1 model artifacts
@@ -168,12 +171,22 @@ pytest tests/ -v
 
 ## Model Training and Export
 
-Training was performed on a Kaggle environment with an NVIDIA Tesla P100 GPU using 5-Fold Stratified Cross-Validation. To replicate training:
+Training can be executed headlessly on Google Colab GPU (`T4` / `L4` / `A100`) or Kaggle using `scripts/train_v4_colab.py` (or `notebooks/batik_motifs_v3_train.ipynb`):
 
-1. Import `notebooks/batik_motifs_v3_train.ipynb` into Kaggle.
-2. Attach the dataset containing 28 batik motif classes.
-3. Execute the notebook to produce `.keras`, `.tflite`, and `.onnx` artifacts.
-4. Convert model weights to ONNX format using `scripts/convert_keras_to_onnx.py`.
+```bash
+# 1. Install dev/training dependencies
+pip install -r requirements-dev.txt
+
+# 2. Fast 1-epoch smoke test on Colab T4 (auto-stops VM on exit)
+colab run --gpu T4 --timeout 0 scripts/train_v4_colab.py --dataset-dir /content/dataset --smoke-test
+
+# 3. Full 5-fold GroupStratifiedKFold training + FP16 ONNX export + calibration
+python scripts/train_v4_colab.py --dataset-dir /content/dataset --backbone efficientnetv2s --img-size 300 --quantize fp16
+
+# 4. Standalone Keras -> ONNX export (opset 17, optional FP16/INT8 quantization) & parity check
+python scripts/convert_keras_to_onnx.py --input path/to/best_model.keras --output web/public/models/batik_model_v3.onnx --quantize fp16
+python scripts/verify_onnx_parity.py --keras path/to/best_model.keras --onnx web/public/models/batik_model_v3.onnx
+```
 
 ## License
 
