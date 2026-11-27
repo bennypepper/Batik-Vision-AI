@@ -88,7 +88,7 @@ ENGLISH_DESCRIPTIONS = {
     'Yogyakarta_Parang': "Grand royal Parang Rusak motif worn by Sultans, embodying spiritual battle against inner temptation.",
 }
 
-def build_labels_registry(labels_txt_path: str = None, output_path: str = None) -> dict:
+def build_labels_registry(labels_txt_path: str | None = None, output_path: str | None = None) -> dict:
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     if labels_txt_path is None:
@@ -98,9 +98,13 @@ def build_labels_registry(labels_txt_path: str = None, output_path: str = None) 
 
     sys.path.insert(0, repo_root)
     try:
-        from src.utils.data import REGION_MAP, WEAK_CLASSES, BATIK_INFO
+        from src.utils.data import BATIK_INFO, REGION_MAP, WEAK_CLASSES
     except ImportError:
-        from archive.v2_legacy.streamlit_app.utils.data import REGION_MAP, WEAK_CLASSES, BATIK_INFO
+        from archive.v2_legacy.streamlit_app.utils.data import (
+            BATIK_INFO,
+            REGION_MAP,
+            WEAK_CLASSES,
+        )
 
     with open(labels_txt_path, "r", encoding="utf-8") as f:
         slugs = [line.strip() for line in f if line.strip()]

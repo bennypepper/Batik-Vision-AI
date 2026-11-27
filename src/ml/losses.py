@@ -1,27 +1,30 @@
-"""Focal Categorical Crossentropy Loss for imbalanced classification."""
+"""Classification losses for Batik Motifs v3/v4 training."""
+
+from __future__ import annotations
 
 from typing import Any
+
 import tensorflow as tf
 
 
 @tf.keras.utils.register_keras_serializable(package="batik_v3")
 class CategoricalFocalLoss(tf.keras.losses.Loss):
-    """Categorical Focal Loss with label smoothing support.
+    """Categorical Focal Loss using true-class probability ``p_t`` for modulation.
 
     Formulation:
-        FL(p_t) = - alpha_t * (1 - p_t)^gamma * log(p_t)
+        p_t = sum(y_true_hard * y_pred, axis=-1)
+        FL(p_t) = (1 - p_t)^gamma * (-sum(alpha * y_true_smooth * log(y_pred)))
 
-    Attributes:
-        gamma: Focusing parameter balancing easy and hard examples. Default: 2.0.
-        alpha: Optional class weights tensor or list. Default: None.
-        label_smoothing: Float in [0, 1]. Smooths categorical targets. Default: 0.1.
+    Computing ``p_t`` from the unsmoothed target avoids distorting off-target
+    classes when ``label_smoothing > 0``. For best probability calibration in
+    v4 training, prefer ``build_classification_loss(mode="cce_smooth")``.
     """
 
     def __init__(
         self,
         gamma: float = 2.0,
         alpha: Any = None,
-        label_smoothing: float = 0.1,
+        label_smoothing: float = 0.0,
         reduction: str = "sum_over_batch_size",
         name: str = "categorical_focal_loss",
     ):
@@ -31,39 +34,35 @@ class CategoricalFocalLoss(tf.keras.losses.Loss):
         self.label_smoothing = float(label_smoothing)
 
     def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
-        """Computes focal loss between ground truth and predictions.
-
-        Args:
-            y_true: Ground truth one-hot encoded tensor.
-            y_pred: Predicted probabilities tensor (softmax output).
-
-        Returns:
-            Computed focal loss tensor.
-        """
-        y_true = tf.cast(y_true, tf.float32)
+        """Compute focal loss using true-class ``p_t`` for the modulating factor."""
+        y_true_hard = tf.cast(y_true, tf.float32)
         y_pred = tf.cast(y_pred, tf.float32)
-
-        if self.label_smoothing > 0.0:
-            num_classes = tf.cast(tf.shape(y_true)[-1], tf.float32)
-            y_true = y_true * (1.0 - self.label_smoothing) + (self.label_smoothing / num_classes)
 
         epsilon = tf.keras.backend.epsilon()
         y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
 
-        # Modulating factor (1 - p_t)^gamma
-        modulating_factor = tf.pow(1.0 - y_pred, self.gamma)
-        log_prob = tf.math.log(y_pred)
+        # True-class probability p_t computed BEFORE label smoothing so off-target
+        # smoothed labels do not receive an inflated (1 - y_pred)^gamma factor.
+        p_t = tf.reduce_sum(y_true_hard * y_pred, axis=-1, keepdims=True)
+        p_t = tf.clip_by_value(p_t, epsilon, 1.0 - epsilon)
+        modulating_factor = tf.pow(1.0 - p_t, self.gamma)
 
-        focal_cross_entropy = -y_true * modulating_factor * log_prob
+        y_target = y_true_hard
+        if self.label_smoothing > 0.0:
+            num_classes = tf.cast(tf.shape(y_true_hard)[-1], tf.float32)
+            y_target = y_true_hard * (1.0 - self.label_smoothing) + (self.label_smoothing / num_classes)
+
+        log_prob = tf.math.log(y_pred)
+        cross_entropy = -y_target * log_prob
 
         if self.alpha is not None:
             alpha_tensor = tf.cast(self.alpha, tf.float32)
-            focal_cross_entropy = alpha_tensor * focal_cross_entropy
+            cross_entropy = alpha_tensor * cross_entropy
 
-        return tf.reduce_sum(focal_cross_entropy, axis=-1)
+        return tf.reduce_sum(modulating_factor * cross_entropy, axis=-1)
 
     def get_config(self) -> dict[str, Any]:
-        """Returns the serializable configuration dictionary."""
+        """Return the serializable configuration dictionary."""
         config = super().get_config()
         config.update({
             "gamma": self.gamma,
@@ -71,3 +70,25 @@ class CategoricalFocalLoss(tf.keras.losses.Loss):
             "label_smoothing": self.label_smoothing,
         })
         return config
+
+
+def build_classification_loss(
+    mode: str = "cce_smooth",
+    label_smoothing: float = 0.05,
+    gamma: float = 2.0,
+    alpha: Any = None,
+) -> tf.keras.losses.Loss:
+    """Construct the classification loss for v3/v4 training.
+
+    Args:
+        mode: ``"cce_smooth"`` (default for v4, preserves probability calibration
+            when paired with capped class weights) or ``"focal"``.
+        label_smoothing: Label smoothing factor in [0, 1). Default: 0.05.
+        gamma: Focusing parameter used when ``mode == "focal"``.
+        alpha: Optional per-class alpha weights when ``mode == "focal"``.
+    """
+    if mode == "cce_smooth":
+        return tf.keras.losses.CategoricalCrossentropy(label_smoothing=float(label_smoothing))
+    if mode == "focal":
+        return CategoricalFocalLoss(gamma=gamma, alpha=alpha, label_smoothing=label_smoothing)
+    raise ValueError(f"Unsupported loss mode: {mode!r}. Expected 'cce_smooth' or 'focal'.")
