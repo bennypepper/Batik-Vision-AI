@@ -3,9 +3,9 @@ import { AppLanguage } from "@/types/batik";
 export const DICTIONARY = {
   id: {
     app_title: "Batik Vision AI",
-    app_version: "v3",
+    app_version: "v4",
     app_subtitle:
-      "Klasifikasi Motif Batik Nusantara - Dua Tahap, Berbasis WebAssembly",
+      "Klasifikasi Motif Batik Nusantara - Dua Tahap dengan DINOv2 & WebGPU/WASM",
     nav_scanner: "Pindai Motif",
     nav_atlas: "Atlas Budaya",
     nav_history: "Riwayat",
@@ -14,9 +14,9 @@ export const DICTIONARY = {
     // Scanner
     scanner_title: "Deteksi dan Klasifikasi Motif Batik",
     scanner_desc:
-      "Unggah foto pakaian atau kain batik. Sistem melokalisasi area kain melalui Lokalisasi Tekstur Adaptif, lalu mengklasifikasikan motifnya melalui EfficientNetV2S - seluruhnya berjalan di peramban Anda.",
+      "Unggah foto pakaian atau kain batik. Sistem melokalisasi area kain melalui Lokalisasi Tekstur Adaptif, lalu mengklasifikasikan motifnya menggunakan DINOv2-ViT-S/14 (INT8) — seluruhnya berjalan di peramban Anda.",
     step_yolo: "Lokalisasi kain (Tekstur Adaptif)",
-    step_classifier: "Klasifikasi motif (EfficientNetV2S)",
+    step_classifier: "Klasifikasi motif (DINOv2-ViT-S/14 INT8)",
     upload_prompt: "Tarik dan lepas gambar di sini, atau klik untuk memilih",
     upload_sub: "Mendukung JPG, PNG, WEBP (maksimal 10MB)",
     btn_browse: "Pilih File",
@@ -98,22 +98,22 @@ export const DICTIONARY = {
     view_detail_link: "Lihat detail",
 
     // About
-    about_title: "Arsitektur dan Metodologi Batik Vision v3",
+    about_title: "Arsitektur dan Metodologi Batik Vision v4",
     about_desc:
-      "Catatan perubahan teknis dari v2 ke v3 - bukan daftar fitur pemasaran, tapi keputusan rekayasa yang benar-benar diambil.",
-    v3_p1_title: "Penyelesaian double-preprocessing",
-    v3_p1_tag: "v2 -> v3",
+      "Catatan rekayasa nyata dari v2 ke v4 — meliputi kurasi dataset bebas kebocoran, benchmark 3 arsitektur, kalibrasi OOD, dan kuantisasi INT8.",
+    v3_p1_title: "Backbone DINOv2-ViT-S/14 INT8 (22.5 MB)",
+    v3_p1_tag: "v3 -> v4",
     v3_p1_desc:
-      "Pada v2, gambar dinormalisasi dua kali sehingga rentang dinamis runtuh menjadi [-1.008, -0.992]. Pada v3, EfficientNetV2S menerima piksel float32 [0, 255] secara native melalui lapisan Rescaling internal.",
-    v3_p2_title: "Deduplikasi perceptual hash",
+      "Menggantikan EfficientNetV2S FP32 (82.1 MB) dengan DINOv2-ViT-S/14 terkuantisasi INT8 (22.5 MB, 3.65x lebih kecil) dengan normalisasi [0, 255] NHWC tertanam langsung di grafik ONNX — mencapai 89.82% Top-1 / 96.01% Top-3 / 87.47% Macro-F1 pada uji holdout bebas kebocoran.",
+    v3_p2_title: "Kurasi dataset bebas kebocoran (3.470 gambar)",
     v3_p2_desc:
-      "Menghilangkan 799 pasangan duplikat data antar fold dan split pengujian menggunakan 64-bit dHash, mencegah kebocoran data antara set latih dan uji.",
-    v3_p3_title: "Focal loss & sample weighting",
+      "Mengaudit 22 sumber publik (22.077 gambar mentah) dengan deduplikasi MD5 + D4-dHash + DINOv2 (cos >= 0.94) dan filter kualitas SigLIP, serta pemisahan StratifiedGroupKFold berdasarkan 3.140 klaster semantik.",
+    v3_p3_title: "Kalibrasi Temperature & deteksi OOD (AUROC 0.959)",
     v3_p3_desc:
-      "Focal categorical crossentropy memprioritaskan kelas minoritas langka (seperti Priangan Merak Ngibing) dengan parameter gamma=2.0 dan bobot sampel efektif.",
-    v3_p4_title: "Arsitektur dua tahap (Lokalisasi Tekstur Adaptif)",
+      "Temperature Scaling (T=0.824) menurunkan ECE menjadi 0.039 dan dikalibrasi terhadap 177 gambar negatif non-batik (termasuk Songket, Tenun, dan Ulos) untuk menolak foto bukan batik secara jujur.",
+    v3_p4_title: "Arsitektur dua tahap & multi-patch voting",
     v3_p4_desc:
-      "Tahap 1 menggunakan Lokalisasi Tekstur Adaptif berbasis kisi Laplacian (siap ditingkatkan dengan Segmentasi ONNX Tahap-1) untuk melokalisasi area kain sebelum klasifikasi multi-patch EfficientNetV2S.",
+      "Tahap 1 menggunakan Lokalisasi Tekstur Adaptif berbasis kisi Laplacian 6x6 untuk melokalisasi area kain, diikuti ekstraksi 3 tile persegi 1:1 dengan voting bobot entropi terbalik di DINOv2-ViT-S/14.",
     zero_backend_title: "Inferensi klien tanpa server (zero-backend)",
     zero_backend_desc:
       "Model berjalan langsung di dalam Web Worker peramban Anda menggunakan ONNX Runtime (WebGPU, WebGL, dan WebAssembly self-hosted). Foto yang Anda unggah tidak pernah dikirim ke server eksternal manapun - privasi penuh, latensi instan.",
@@ -121,7 +121,7 @@ export const DICTIONARY = {
     // Developer & Platform
     web_overview_title: "Tentang Platform",
     web_overview_desc:
-      "Batik Vision AI adalah inisiatif pelestarian warisan budaya tekstil Nusantara melalui teknologi kecerdasan buatan. Menggabungkan Lokalisasi Tekstur Adaptif (siap Segmentasi ONNX Tahap-1) dan klasifikasi tekstur EfficientNetV2S, platform ini bekerja 100% di sisi klien menggunakan WebAssembly untuk menjaga privasi mutlak pengguna.",
+      "Batik Vision AI adalah inisiatif pelestarian warisan budaya tekstil Nusantara melalui teknologi kecerdasan buatan. Menggabungkan Lokalisasi Tekstur Adaptif dan klasifikasi DINOv2-ViT-S/14 INT8 terkalibrasi OOD, platform ini bekerja 100% di sisi klien menggunakan WebGPU/WebAssembly untuk menjaga privasi mutlak pengguna.",
     dev_title: "Tentang Pengembang",
     dev_name: "Benny Pepper",
     dev_role: "AI / Machine Learning Engineer & Full-Stack Developer",
@@ -138,13 +138,13 @@ export const DICTIONARY = {
 
     // Footer
     footer_text: "Batik Vision AI · Indonesian Batik Motifs Recognition Engine",
-    footer_meta: "EfficientNetV2S · 28 kelas · WebGPU/WebGL/WASM",
+    footer_meta: "DINOv2-ViT-S/14 INT8 (22.5 MB) · 28 kelas · WebGPU/WebGL/WASM",
   },
   en: {
     app_title: "Batik Vision AI",
-    app_version: "v3",
+    app_version: "v4",
     app_subtitle:
-      "Client-Side Two-Stage Indonesian Batik Classification via WebAssembly",
+      "Client-Side Two-Stage Indonesian Batik Classification via DINOv2 & WebGPU/WASM",
     nav_scanner: "Scan Motif",
     nav_atlas: "Cultural Atlas",
     nav_history: "History",
@@ -153,9 +153,9 @@ export const DICTIONARY = {
     // Scanner
     scanner_title: "Batik Motif Detection and Classification",
     scanner_desc:
-      "Upload a photo of batik clothing or fabric. The system isolates the fabric area via Adaptive Texture Localization, then classifies the pattern using EfficientNetV2S - running entirely in your browser.",
+      "Upload a photo of batik clothing or fabric. The system isolates the fabric area via Adaptive Texture Localization, then classifies the pattern using DINOv2-ViT-S/14 (INT8) — running entirely in your browser.",
     step_yolo: "Fabric localization (Adaptive Texture)",
-    step_classifier: "Motif classification (EfficientNetV2S)",
+    step_classifier: "Motif classification (DINOv2-ViT-S/14 INT8)",
     upload_prompt: "Drag and drop your image here, or click to browse",
     upload_sub: "Supports JPG, PNG, WEBP (maximum 10MB)",
     btn_browse: "Browse Files",
@@ -239,22 +239,22 @@ export const DICTIONARY = {
     view_detail_link: "View details",
 
     // About
-    about_title: "Batik Vision v3 Architecture and Methodology",
+    about_title: "Batik Vision v4 Architecture and Methodology",
     about_desc:
-      "Technical changelog from v2 to v3 - not a marketing feature grid, but concrete engineering decisions.",
-    v3_p1_title: "Double-preprocessing resolution",
-    v3_p1_tag: "v2 -> v3",
+      "Concrete engineering decisions from v2 to v4 — leak-free dataset curation, 3-backbone benchmarking, OOD calibration, and INT8 quantization.",
+    v3_p1_title: "DINOv2-ViT-S/14 INT8 backbone (22.5 MB)",
+    v3_p1_tag: "v3 -> v4",
     v3_p1_desc:
-      "In v2, images were normalized twice, collapsing the dynamic range to [-1.008, -0.992]. In v3, EfficientNetV2S natively consumes float32 [0, 255] pixels via an internal Rescaling layer.",
-    v3_p2_title: "Perceptual hash deduplication",
+      "Replaced EfficientNetV2S FP32 (82.1 MB) with INT8-quantized DINOv2-ViT-S/14 (22.5 MB, 3.65x smaller) embedding [0, 255] NHWC preprocessing inside ONNX — achieving 89.82% Top-1 / 96.01% Top-3 / 87.47% Macro-F1 on a strictly leak-free holdout split.",
+    v3_p2_title: "Leak-free dataset curation (3,470 images)",
     v3_p2_desc:
-      "Eliminated 799 duplicate image pairs across cross-validation folds and test splits using 64-bit dHash, preventing data leakage.",
-    v3_p3_title: "Focal loss & sample weighting",
+      "Audited 22 public sources (22,077 raw images) using MD5 + 8-way D4-dHash + DINOv2 semantic deduplication (cos >= 0.94) and SigLIP noise filtering, with StratifiedGroupKFold splits across 3,140 semantic clusters.",
+    v3_p3_title: "Temperature Scaling & OOD rejection (AUROC 0.959)",
     v3_p3_desc:
-      "Focal categorical crossentropy prioritizes rare minority classes (such as Priangan Merak Ngibing) with gamma=2.0 and effective sample weighting.",
-    v3_p4_title: "Two-stage localization architecture",
+      "Post-hoc Temperature Scaling (T=0.824) reduced Test ECE to 0.039 and calibrated entropy/confidence rejection against 177 open-licensed non-batik negatives (including Songket, Tenun, and Ulos).",
+    v3_p4_title: "Two-stage localization & multi-patch voting",
     v3_p4_desc:
-      "Stage 1 uses Adaptive Texture Localization via canonical grid-Laplacian saliency (with Stage-1 ONNX Segmentation ready) to isolate fabric regions before multi-patch EfficientNetV2S classification.",
+      "Stage 1 uses 256px resolution-normalized 6x6 grid-Laplacian Adaptive Texture Localization, followed by 3 aspect-preserving 1:1 square tiles combined via inverse-entropy weighted voting.",
     zero_backend_title: "Client-side serverless inference (zero-backend)",
     zero_backend_desc:
       "The model runs directly inside a browser Web Worker using self-hosted ONNX Runtime (WebGPU, WebGL, and WebAssembly). Uploaded photos are never sent to any external server - complete privacy and zero server latency.",
@@ -262,7 +262,7 @@ export const DICTIONARY = {
     // Developer & Platform
     web_overview_title: "About the Platform",
     web_overview_desc:
-      "Batik Vision AI is an open cultural preservation platform bridging traditional Indonesian textile heritage with cutting-edge edge AI. Powered by a two-stage inference pipeline (Adaptive Texture Localization with Stage-1 ONNX Segmentation ready, plus EfficientNetV2S texture classification), it delivers instant recognition of 28 batik motifs directly in your browser with zero server latency and absolute privacy.",
+      "Batik Vision AI is an open cultural preservation platform bridging traditional Indonesian textile heritage with edge AI. Powered by Adaptive Texture Localization and an OOD-calibrated INT8 DINOv2-ViT-S/14 classifier, it recognizes 28 batik motifs directly in your browser with zero server latency and absolute privacy.",
     dev_title: "About the Developer",
     dev_name: "Benny Pepper",
     dev_role: "AI / Machine Learning Engineer & Full-Stack Developer",
@@ -279,7 +279,7 @@ export const DICTIONARY = {
 
     // Footer
     footer_text: "Batik Vision AI · Indonesian Batik Motifs Recognition Engine",
-    footer_meta: "EfficientNetV2S · 28 classes · WebGPU/WebGL/WASM",
+    footer_meta: "DINOv2-ViT-S/14 INT8 (22.5 MB) · 28 classes · WebGPU/WebGL/WASM",
   },
 };
 

@@ -6,12 +6,12 @@ import type {
   ModelCalibrationConfig,
 } from "@/types/batik";
 
-const MODEL_CACHE_NAME = "batik-models-v1";
+const MODEL_CACHE_NAME = "batik-models-v2";
 const DEFAULT_CONFIG: ModelCalibrationConfig = {
   input_size: 224,
-  temperature: 1.0,
-  ood_entropy_threshold: 0.85,
-  ood_min_confidence: 0.25,
+  temperature: 0.8242,
+  ood_entropy_threshold: 0.55,
+  ood_min_confidence: 0.2,
 };
 
 export interface WorkerInferRequest {

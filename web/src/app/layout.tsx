@@ -16,9 +16,9 @@ const workSans = Work_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Batik Vision AI v3 | Indonesian Batik Motifs Recognition Engine",
+  title: "Batik Vision AI v4 | Indonesian Batik Motifs Recognition Engine",
   description:
-    "Two-stage Indonesian batik motif classification powered by adaptive fabric localization and EfficientNetV2S running client-side via WebGPU, WebGL, and WebAssembly.",
+    "Two-stage Indonesian batik motif classification powered by adaptive fabric localization and quantized DINOv2-ViT-S/14 (INT8) running client-side via WebGPU, WebGL, and WebAssembly.",
 };
 
 const themeInitScript = `(function(){try{var t=localStorage.getItem("batik_v3_theme");if(t==="dark"||t==="light"){document.documentElement.setAttribute("data-theme",t);}var l=localStorage.getItem("batik_v3_language");if(l==="id"||l==="en"){document.documentElement.lang=l;}}catch(e){}})();`;

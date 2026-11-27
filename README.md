@@ -1,6 +1,19 @@
 # Batik Vision AI: Two-Stage Indonesian Batik Motifs Recognition Engine
 
-Batik Vision AI is a computer vision platform designed to preserve, document, and classify 28 traditional Indonesian batik motifs. The system combines client-side adaptive fabric localization (with Stage-1 ONNX garment segmentation support) and aspect-preserving multi-patch texture classification via EfficientNetV2S, executed entirely inside a browser Web Worker using ONNX Runtime Web (WebGPU / WebGL / self-hosted WebAssembly).
+Batik Vision AI is a computer vision platform designed to preserve, document, and classify 28 traditional Indonesian batik motifs. The system combines client-side adaptive fabric localization and aspect-preserving 3-tile multi-patch classification via an **INT8-quantized `DINOv2-ViT-S/14` (`22.47 MB`)** model, executed entirely inside a browser Web Worker using ONNX Runtime Web (WebGPU / WebGL / self-hosted WebAssembly).
+
+## v4.0 Leak-Free Benchmark Results
+
+Evaluated on our curated **[Indonesian Batik Dataset v2.0](https://www.kaggle.com/datasets/fisheightcharacter/indonesian-batik-dataset-enhanced-and-cleaned)** (`3,470` full-resolution images across `28` classes, `3,140` independent DINOv2 semantic clusters, `0` shared clusters across `train=2,472 / val=497 / test=501`, plus `177` open-licensed OOD negatives including *Songket / Tenun / Ulos*):
+
+| Backbone | Input | Params | Val Macro-F1 | Holdout Top-1 | Holdout Top-3 | Holdout Macro-F1 | Test ECE (Cal.) | OOD AUROC (Entropy) | OOD Recall @ <=5% FRR |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **`DINOv2-ViT-S/14` (INT8 3-Tile Web, Deployed)** | `224²` | `21.6M` (`22.5 MB`) | **87.49%** | **89.82%** | **96.01%** | **87.47%** | **0.0392** ($T=0.824$) | **0.9591** | **75.7%** |
+| `DINOv2-ViT-S/14` (FP32 Single-Crop) | `224²` | `21.6M` (`86.7 MB`) | 87.49% | 89.02% | 95.41% | 87.29% | 0.0332 | 0.9542 | 73.5% |
+| `ConvNeXt-Tiny` (FP32 Single-Crop) | `288²` | `27.8M` | 87.44% | 90.42% | 95.01% | 88.38% | 0.0411 ($T=0.679$) | 0.9577 | 74.6% |
+| `EfficientNetV2-S` (FP32 Single-Crop) | `300²` | `20.2M` | 87.09% | 87.82% | 95.01% | 87.29% | 0.0341 ($T=0.717$) | 0.9291 | 54.8% |
+
+> Selected strictly by leak-free Validation Macro-F1 (zero test peeking), **`DINOv2-ViT-S/14` INT8** cuts browser model weight size by **3.65×** (`82.1 MB` v3 → `22.5 MB` v4), improves Macro-F1 by **+6.0%** over v2.5 (`81.45%` → `87.47%`), and boosts OOD rejection recall by **+20.9%** over `EfficientNetV2-S` (`54.8%` → `75.7%`).
 
 ## System Architecture
 
@@ -20,9 +33,9 @@ Batik Vision AI is a computer vision platform designed to preserve, document, an
                    ┌──────────────────────────────────────────┐
                    │ Stage 2: Multi-Patch Motif Classifier    │
                    │  - 3 aspect-preserving 1:1 square tiles  │
-                   │  - Backbone: Fine-Tuned EfficientNetV2S  │
-                   │  - Internal Rescaling: [0,255] -> [-1,1] │
-                   │  - Entropy-weighted voting + OOD check   │
+                   │  - Backbone: DINOv2-ViT-S/14 INT8 (22MB) │
+                   │  - Built-in NHWC [0,255] -> ImageNet norm│
+                   │  - Entropy-weighted voting + OOD (T=0.82)│
                    └────────────────────┬─────────────────────┘
                                         │
                                         ▼

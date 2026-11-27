@@ -10,13 +10,13 @@ import { getAllMotifs, getMotifById, getMotifBySlug } from "@/lib/labels-data";
 import type { WorkerRequest, WorkerResponse } from "@/lib/inference.worker";
 
 export const DEFAULT_MODEL_URL =
-  process.env.NEXT_PUBLIC_MODEL_URL || "/models/batik_model_v3.onnx";
+  process.env.NEXT_PUBLIC_MODEL_URL || "/models/batik_model_v4.onnx";
 
 export const DEFAULT_MODEL_CONFIG: ModelCalibrationConfig = {
   input_size: 224,
-  temperature: 1.0,
-  ood_entropy_threshold: 0.85,
-  ood_min_confidence: 0.25,
+  temperature: 0.8242,
+  ood_entropy_threshold: 0.55,
+  ood_min_confidence: 0.2,
 };
 
 export class ModelLoadError extends Error {
@@ -431,7 +431,7 @@ function buildMultiPatchFloat32Buffer(
     );
     const imgData = ctx.getImageData(0, 0, inputSize, inputSize).data;
     for (let i = 0; i < imgData.length; i += 4) {
-      // EfficientNetV2S expects raw float32 RGB in [0, 255]
+      // v4 ONNX graph embeds [0, 255] NHWC -> ImageNet normalization internally
       floatArr[p++] = imgData[i];
       floatArr[p++] = imgData[i + 1];
       floatArr[p++] = imgData[i + 2];
