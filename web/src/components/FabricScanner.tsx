@@ -1,18 +1,37 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
-import { AppLanguage, BoundingBox, PredictionResult } from "@/types/batik";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import {
+  AppLanguage,
+  BoundingBox,
+  ExecutionProvider,
+  PredictionResult,
+} from "@/types/batik";
 import { t } from "@/lib/i18n";
 import { RoiCropper } from "./RoiCropper";
 import { ClassificationResults } from "./ClassificationResults";
 import { detectFabricRegion, getFabricPresets } from "@/lib/yolo-detector";
-import { runInferenceOnCanvas } from "@/lib/classifier";
-import { Upload, Camera, Loader2, AlertCircle, ArrowRight, Crop } from "lucide-react";
+import {
+  runInferenceOnCanvas,
+  resetInferenceWorker,
+  ModelLoadError,
+} from "@/lib/classifier";
+import {
+  Upload,
+  Camera,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+  Crop,
+  RotateCcw,
+} from "lucide-react";
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_IMAGE_SIDE = 1024;
 
 interface FabricScannerProps {
   language: AppLanguage;
   onSaveScanRecord: (record: {
-    thumbnail: string;
     predictions: PredictionResult[];
     inferenceTimeMs: number;
   }) => void;
@@ -27,46 +46,87 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [initialBox, setInitialBox] = useState<BoundingBox | null>(null);
-  const [naturalDimensions, setNaturalDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [naturalDimensions, setNaturalDimensions] = useState<{
+    width: number;
+    height: number;
+  }>({ width: 0, height: 0 });
   const [framingMode, setFramingMode] = useState<"swatch" | "center">("swatch");
-  const [presets, setPresets] = useState<{ swatch: BoundingBox; center: BoundingBox } | null>(null);
+  const [presets, setPresets] = useState<{
+    swatch: BoundingBox;
+    center: BoundingBox;
+    adaptive: BoundingBox;
+  } | null>(null);
   const [isManualCropping, setIsManualCropping] = useState(false);
-  const [status, setStatus] = useState<"idle" | "detecting" | "cropping" | "classifying" | "done">("idle");
-  const [predictions, setPredictions] = useState<PredictionResult[] | null>(null);
+  const [status, setStatus] = useState<
+    "idle" | "detecting" | "cropping" | "classifying" | "done"
+  >("idle");
+  const [predictions, setPredictions] = useState<PredictionResult[] | null>(
+    null
+  );
   const [croppedThumbnail, setCroppedThumbnail] = useState<string | null>(null);
   const [inferenceTimeMs, setInferenceTimeMs] = useState(0);
+  const [executionProvider, setExecutionProvider] =
+    useState<ExecutionProvider>("wasm");
+  const [isOutOfDistribution, setIsOutOfDistribution] = useState(false);
+  const [loadProgress, setLoadProgress] = useState<number>(0);
+  const [loadStage, setLoadStage] = useState<
+    "downloading" | "initializing" | "inferring"
+  >("inferring");
   const [isSaved, setIsSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isModelError, setIsModelError] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-
-  const startCamera = async () => {
-    try {
-      setErrorMsg(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setIsCameraActive(true);
-    } catch (err) {
-      console.error("Camera access failed:", err);
-      // Fallback: trigger file input if camera is not available or blocked
-      fileInputRef.current?.click();
-    }
-  };
+  const lastCropCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     setIsCameraActive(false);
   }, []);
+
+  // Attach MediaStream to <video> once the camera view mounts
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {
+        // Autoplay may be deferred until user interaction
+      });
+    }
+  }, [isCameraActive]);
+
+  // Always release hardware camera tracks on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
+
+  const startCamera = async () => {
+    try {
+      setErrorMsg(null);
+      setIsModelError(false);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+      streamRef.current = stream;
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error("Camera access failed:", err);
+      fileInputRef.current?.click();
+    }
+  };
 
   const capturePhoto = () => {
     if (!videoRef.current) return;
@@ -78,69 +138,120 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
     if (!ctx) return;
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
     stopCamera();
     processUploadedImage(dataUrl);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const validateAndReadFile = (file: File) => {
+    setErrorMsg(null);
+    setIsModelError(false);
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg(t(language, "invalid_file_type"));
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setErrorMsg(t(language, "file_too_large"));
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      if (ev.target?.result) {
-        processUploadedImage(ev.target.result as string);
+      if (typeof ev.target?.result === "string") {
+        processUploadedImage(ev.target.result);
       }
     };
+    reader.onerror = () => {
+      setErrorMsg(t(language, "image_load_failed"));
+    };
     reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset value so uploading the same file twice still triggers onChange
+    e.target.value = "";
+    if (!file) return;
+    validateAndReadFile(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        if (ev.target?.result) {
-          processUploadedImage(ev.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+      validateAndReadFile(file);
+    }
+  };
+
+  const handleDropzoneKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      fileInputRef.current?.click();
     }
   };
 
   const processUploadedImage = async (dataUrl: string) => {
-    setImageSrc(dataUrl);
     setPredictions(null);
     setIsSaved(false);
     setErrorMsg(null);
+    setIsModelError(false);
     setIsManualCropping(false);
     setStatus("detecting");
 
     const img = new Image();
+    let executed = false;
+
     const handleLoaded = async () => {
-      const nW = img.naturalWidth || 640;
-      const nH = img.naturalHeight || 640;
-      setNaturalDimensions({ width: nW, height: nH });
+      if (executed) return;
+      executed = true;
+
+      const rawW = img.naturalWidth || 640;
+      const rawH = img.naturalHeight || 640;
+
+      // Downscale giant uploads to max 1024px side (prevents iOS Safari canvas crashes)
+      const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(rawW, rawH));
+      const normW = Math.max(32, Math.round(rawW * scale));
+      const normH = Math.max(32, Math.round(rawH * scale));
+
       const canvas = document.createElement("canvas");
-      canvas.width = nW;
-      canvas.height = nH;
+      canvas.width = normW;
+      canvas.height = normH;
       const ctx = canvas.getContext("2d");
+
+      let normalizedSrc = dataUrl;
       if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        // Stage 1: YOLO fabric ROI detection
+        ctx.drawImage(img, 0, 0, normW, normH);
+        if (scale < 1) {
+          normalizedSrc = canvas.toDataURL("image/jpeg", 0.92);
+        }
+        setImageSrc(normalizedSrc);
+        setNaturalDimensions({ width: normW, height: normH });
+
+        // Stage 1: Adaptive Texture Localization
         const detectedBox = await detectFabricRegion(canvas);
         setInitialBox(detectedBox);
         setFramingMode(detectedBox.framingMode);
         setPresets(detectedBox.presets);
+      } else {
+        setImageSrc(dataUrl);
+        setNaturalDimensions({ width: rawW, height: rawH });
       }
+
       setStatus("cropping");
     };
 
+    const handleError = () => {
+      if (executed) return;
+      executed = true;
+      setErrorMsg(t(language, "image_load_failed"));
+      setStatus("idle");
+    };
+
     img.onload = handleLoaded;
+    img.onerror = handleError;
     img.src = dataUrl;
-    if (img.complete) {
+    if (img.complete && img.naturalWidth > 0) {
       handleLoaded();
     }
   };
@@ -148,10 +259,53 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
   const handleSelectPreset = (mode: "swatch" | "center") => {
     setFramingMode(mode);
     if (presets) {
-      setInitialBox(presets[mode]);
+      setInitialBox(mode === "center" ? presets.adaptive : presets.swatch);
     } else if (naturalDimensions.width > 0 && naturalDimensions.height > 0) {
-      const p = getFabricPresets(naturalDimensions.width, naturalDimensions.height);
+      const p = getFabricPresets(
+        naturalDimensions.width,
+        naturalDimensions.height
+      );
       setInitialBox(p[mode]);
+    }
+  };
+
+  const classifyCanvas = async (canvas: HTMLCanvasElement) => {
+    lastCropCanvasRef.current = canvas;
+    setStatus("classifying");
+    setErrorMsg(null);
+    setIsModelError(false);
+    setLoadProgress(0);
+    setLoadStage("downloading");
+
+    const thumbData = canvas.toDataURL("image/jpeg", 0.85);
+    setCroppedThumbnail(thumbData);
+
+    try {
+      const result = await runInferenceOnCanvas(canvas, {
+        onProgress: (percent, stage) => {
+          setLoadProgress(percent);
+          setLoadStage(stage);
+        },
+      });
+      setPredictions(result.predictions);
+      setInferenceTimeMs(result.inferenceTimeMs);
+      setExecutionProvider(result.executionProvider);
+      setIsOutOfDistribution(result.isOutOfDistribution);
+      setStatus("done");
+
+      // Persist lightweight scan record without full-res base64 thumbnail
+      onSaveScanRecord({
+        predictions: result.predictions,
+        inferenceTimeMs: result.inferenceTimeMs,
+      });
+      setIsSaved(true);
+    } catch (err: unknown) {
+      console.error("Classification error:", err);
+      setIsModelError(err instanceof ModelLoadError);
+      setErrorMsg(
+        err instanceof Error ? err.message : "Classification failed"
+      );
+      setStatus("cropping");
     }
   };
 
@@ -161,23 +315,28 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
 
     const img = new Image();
     let executed = false;
+
     const runInference = async () => {
       if (executed) return;
       executed = true;
-      const box = boxToCrop || {
+
+      const box: BoundingBox = boxToCrop || {
         x: 0,
         y: 0,
         width: img.naturalWidth || 480,
         height: img.naturalHeight || 480,
         label: "Fabric",
-        score: 1.0,
+        confidence: 1.0,
       };
 
       const canvas = document.createElement("canvas");
-      canvas.width = Math.max(32, box.width);
-      canvas.height = Math.max(32, box.height);
+      canvas.width = Math.max(32, Math.round(box.width));
+      canvas.height = Math.max(32, Math.round(box.height));
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      if (!ctx) {
+        setStatus("cropping");
+        return;
+      }
 
       ctx.drawImage(
         img,
@@ -191,61 +350,35 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         canvas.height
       );
 
-      const thumbData = canvas.toDataURL("image/jpeg", 0.9);
-      setCroppedThumbnail(thumbData);
+      await classifyCanvas(canvas);
+    };
 
-      try {
-        // Stage 2: EfficientNetV2S CNN inference
-        const result = await runInferenceOnCanvas(canvas);
-        setPredictions(result.predictions);
-        setInferenceTimeMs(result.inferenceTimeMs);
-        setStatus("done");
-
-        // Automatically persist scan into local history
-        onSaveScanRecord({
-          thumbnail: thumbData,
-          predictions: result.predictions,
-          inferenceTimeMs: result.inferenceTimeMs,
-        });
-        setIsSaved(true);
-      } catch (err: any) {
-        console.error("Classification error:", err);
-        setErrorMsg(err?.message || "Classification failed");
-        setStatus("cropping");
-      }
+    const handleError = () => {
+      if (executed) return;
+      executed = true;
+      setErrorMsg(t(language, "image_load_failed"));
+      setStatus("cropping");
     };
 
     img.onload = runInference;
+    img.onerror = handleError;
     img.src = imageSrc;
-    if (img.complete) {
+    if (img.complete && img.naturalWidth > 0) {
       runInference();
     }
   };
 
   const handleConfirmCrop = async (croppedCanvas: HTMLCanvasElement) => {
-    setStatus("classifying");
     setIsManualCropping(false);
-    const thumbData = croppedCanvas.toDataURL("image/jpeg", 0.9);
-    setCroppedThumbnail(thumbData);
+    await classifyCanvas(croppedCanvas);
+  };
 
-    try {
-      // Stage 2: EfficientNetV2S CNN inference
-      const result = await runInferenceOnCanvas(croppedCanvas);
-      setPredictions(result.predictions);
-      setInferenceTimeMs(result.inferenceTimeMs);
-      setStatus("done");
-
-      // Automatically persist scan into local history
-      onSaveScanRecord({
-        thumbnail: thumbData,
-        predictions: result.predictions,
-        inferenceTimeMs: result.inferenceTimeMs,
-      });
-      setIsSaved(true);
-    } catch (err: any) {
-      console.error("Classification error:", err);
-      setErrorMsg(err?.message || "Classification failed");
-      setStatus("cropping");
+  const handleRetryModel = async () => {
+    resetInferenceWorker();
+    if (lastCropCanvasRef.current) {
+      await classifyCanvas(lastCropCanvasRef.current);
+    } else if (initialBox) {
+      await executeClassificationOnBox(initialBox);
     }
   };
 
@@ -254,14 +387,16 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
     setPredictions(null);
     setInitialBox(null);
     setIsManualCropping(false);
+    setErrorMsg(null);
+    setIsModelError(false);
+    lastCropCanvasRef.current = null;
     setStatus("idle");
     stopCamera();
   };
 
   const handleSaveToHistory = () => {
-    if (predictions && croppedThumbnail && !isSaved) {
+    if (predictions && !isSaved) {
       onSaveScanRecord({
-        thumbnail: croppedThumbnail,
         predictions,
         inferenceTimeMs,
       });
@@ -271,17 +406,21 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
 
   const loadSampleImage = async (path: string) => {
     try {
+      setErrorMsg(null);
+      setIsModelError(false);
       const res = await fetch(path);
+      if (!res.ok) throw new Error("Sample image unavailable");
       const blob = await res.blob();
       const reader = new FileReader();
       reader.onload = (ev) => {
-        if (ev.target?.result) {
-          processUploadedImage(ev.target.result as string);
+        if (typeof ev.target?.result === "string") {
+          processUploadedImage(ev.target.result);
         }
       };
       reader.readAsDataURL(blob);
     } catch (err) {
       console.error("Failed to load sample image:", err);
+      setErrorMsg(t(language, "image_load_failed"));
     }
   };
 
@@ -335,9 +474,33 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
       </div>
 
       {errorMsg && (
-        <div className="max-w-4xl mx-auto mb-4 p-3.5 rounded-lg bg-[rgba(122,46,34,0.15)] border border-[rgba(122,46,34,0.35)] text-red-300 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-          <span>{errorMsg}</span>
+        <div
+          role="alert"
+          className="max-w-4xl mx-auto mb-4 p-4 rounded-xl bg-[var(--mahogany-tint)] border border-[var(--mahogany)] text-[var(--on-canvas)] text-xs flex flex-wrap items-center justify-between gap-3"
+        >
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+            <AlertCircle className="w-4 h-4 text-[var(--mahogany)] shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              {isModelError && (
+                <div className="font-semibold text-[var(--mahogany)]">
+                  {t(language, "model_error_title")}
+                </div>
+              )}
+              <div className="text-[var(--on-canvas-soft)] break-words">
+                {errorMsg}
+              </div>
+            </div>
+          </div>
+          {isModelError && imageSrc && (
+            <button
+              type="button"
+              onClick={handleRetryModel}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white text-xs font-semibold transition cursor-pointer border-none shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{t(language, "model_error_retry")}</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -358,12 +521,14 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
               ref={videoRef}
               autoPlay
               playsInline
+              muted
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 border-2 border-dashed border-[var(--soga)] m-8 rounded-lg pointer-events-none" />
           </div>
           <div className="flex items-center justify-center gap-3">
             <button
+              type="button"
               onClick={capturePhoto}
               className="px-5 py-2.5 bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white font-semibold text-xs rounded-md transition flex items-center gap-2 cursor-pointer border-none shadow"
             >
@@ -371,6 +536,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
               <span>{t(language, "btn_capture")}</span>
             </button>
             <button
+              type="button"
               onClick={stopCamera}
               className="px-4 py-2.5 bg-transparent border border-[var(--canvas-line-strong)] hover:bg-[rgba(237,230,216,0.05)] text-[var(--on-canvas-soft)] text-xs rounded-md transition cursor-pointer"
             >
@@ -384,10 +550,13 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
       {status === "idle" && !isCameraActive && (
         <div className="max-w-4xl mx-auto space-y-6">
           <div
+            role="button"
+            tabIndex={0}
+            onKeyDown={handleDropzoneKeyDown}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className="w-full bg-[var(--cloth)] text-[var(--on-cloth)] border-2 border-dashed border-[var(--soga)] rounded-2xl py-14 sm:py-16 px-6 text-center cursor-pointer transition hover:bg-[var(--cloth-deep)] shadow-sm"
+            className="w-full bg-[var(--cloth)] text-[var(--on-cloth)] border-2 border-dashed border-[var(--soga)] rounded-2xl py-14 sm:py-16 px-6 text-center cursor-pointer transition hover:bg-[var(--cloth-deep)] focus:outline-none focus:ring-2 focus:ring-[var(--soga)] shadow-sm"
           >
             <div className="w-14 h-14 rounded-full bg-[var(--soga-tint)] text-[var(--soga)] flex items-center justify-center mx-auto mb-4 border border-[rgba(161,90,46,0.25)]">
               <Upload className="w-6 h-6" />
@@ -403,6 +572,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
           {/* Action Buttons */}
           <div className="flex items-center justify-center gap-3.5">
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               className="bg-transparent border border-[var(--canvas-line-strong)] text-[var(--on-canvas)] text-[13.5px] font-medium px-6 py-3 rounded-lg hover:bg-[rgba(237,230,216,0.05)] flex items-center gap-2 cursor-pointer transition"
             >
@@ -410,6 +580,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
               <span>{t(language, "btn_browse")}</span>
             </button>
             <button
+              type="button"
               onClick={startCamera}
               className="bg-[var(--soga)] text-white text-[13.5px] font-semibold px-6 py-3 rounded-lg hover:bg-[var(--soga-deep)] flex items-center gap-2 cursor-pointer transition border-none shadow"
             >
@@ -421,22 +592,32 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
           {/* Quick Sample Motifs Bar */}
           <div className="pt-2 text-center">
             <span className="text-[12px] text-[var(--on-canvas-faint)] block mb-2.5">
-              {language === "id" ? "Atau uji coba langsung dengan contoh motif berikut:" : "Or test immediately with these authentic sample motifs:"}
+              {language === "id"
+                ? "Atau uji coba langsung dengan contoh motif berikut:"
+                : "Or test immediately with these authentic sample motifs:"}
             </span>
             <div className="flex flex-wrap justify-center gap-2.5">
               {[
-                { name: "Megamendung", path: "/motifs/Jawa_Barat_Megamendung.jpg" },
+                {
+                  name: "Megamendung",
+                  path: "/motifs/Jawa_Barat_Megamendung.jpg",
+                },
                 { name: "Kawung", path: "/motifs/Yogyakarta_Kawung.jpg" },
                 { name: "Parang Solo", path: "/motifs/Solo_Parang.jpg" },
                 { name: "Ceplok", path: "/motifs/Ceplok.jpg" },
                 { name: "Lasem", path: "/motifs/Lasem.jpg" },
               ].map((sample) => (
                 <button
+                  type="button"
                   key={sample.name}
                   onClick={() => loadSampleImage(sample.path)}
                   className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[var(--canvas-line-strong)] hover:border-[var(--soga)] bg-[var(--canvas-deep)] hover:bg-[rgba(161,90,46,0.1)] text-[12px] text-[var(--on-canvas-soft)] hover:text-[var(--on-canvas)] transition cursor-pointer"
                 >
-                  <img src={sample.path} alt={sample.name} className="w-4 h-4 rounded-full object-cover shrink-0" />
+                  <img
+                    src={sample.path}
+                    alt={sample.name}
+                    className="w-4 h-4 rounded-full object-cover shrink-0"
+                  />
                   <span>{sample.name}</span>
                 </button>
               ))}
@@ -445,19 +626,36 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         </div>
       )}
 
-      {/* Detecting / Classifying Loader */}
+      {/* Detecting / Classifying Loader with Real Download Progress */}
       {(status === "detecting" || status === "classifying") && (
         <div className="max-w-4xl mx-auto py-12 px-6 text-center space-y-3 bg-[var(--canvas-deep)] rounded-xl border border-[var(--canvas-line-strong)]">
           <Loader2 className="w-7 h-7 text-[var(--soga)] animate-spin mx-auto" />
           <p className="text-sm font-medium text-[var(--on-canvas)]">
             {status === "detecting"
               ? t(language, "status_detecting_fabric")
+              : loadStage === "downloading"
+              ? t(language, "status_downloading_model")
+              : loadStage === "initializing"
+              ? t(language, "status_loading_model")
               : t(language, "status_classifying")}
           </p>
+          {status === "classifying" && loadStage === "downloading" && (
+            <div className="max-w-xs mx-auto space-y-1.5 pt-1">
+              <div className="w-full h-2 bg-[var(--cloth-deep)] rounded-full overflow-hidden border border-[var(--canvas-line-strong)]">
+                <div
+                  className="h-full bg-[var(--soga)] transition-all duration-200"
+                  style={{ width: `${Math.max(4, loadProgress)}%` }}
+                />
+              </div>
+              <div className="text-[11px] text-[var(--on-canvas-faint)] tnum">
+                {loadProgress}%
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Stage 1 Complete: Preview with YOLO Bounding Box Overlay */}
+      {/* Stage 1 Complete: Preview with Adaptive Saliency Bounding Box Overlay */}
       {status === "cropping" && imageSrc && initialBox && !isManualCropping && (
         <div className="max-w-4xl mx-auto space-y-4">
           {/* Preset Framing Quick-Toggles */}
@@ -508,18 +706,27 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
               alt="Uploaded batik preview"
               className="w-full h-auto block"
             />
-            {/* Simulated / Real YOLO bounding box */}
+            {/* Adaptive Saliency bounding box */}
             <div
               className="absolute border-2 border-dashed border-[var(--soga)] rounded pointer-events-none transition-all duration-300"
               style={{
-                left: `${(initialBox.x / (naturalDimensions.width || 1)) * 100}%`,
-                top: `${(initialBox.y / (naturalDimensions.height || 1)) * 100}%`,
-                width: `${(initialBox.width / (naturalDimensions.width || 1)) * 100}%`,
-                height: `${(initialBox.height / (naturalDimensions.height || 1)) * 100}%`,
+                left: `${
+                  (initialBox.x / (naturalDimensions.width || 1)) * 100
+                }%`,
+                top: `${
+                  (initialBox.y / (naturalDimensions.height || 1)) * 100
+                }%`,
+                width: `${
+                  (initialBox.width / (naturalDimensions.width || 1)) * 100
+                }%`,
+                height: `${
+                  (initialBox.height / (naturalDimensions.height || 1)) * 100
+                }%`,
               }}
             >
               <span className="absolute -top-6 left-0 bg-[var(--soga)] text-white text-[10.5px] font-semibold px-2 py-0.5 rounded-t whitespace-nowrap shadow">
-                {t(language, "fabric_detected")} · {(initialBox.confidence * 100).toFixed(0)}%
+                {t(language, "fabric_detected")} ·{" "}
+                {(initialBox.confidence * 100).toFixed(0)}%
               </span>
             </div>
           </div>
@@ -536,6 +743,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <button
+              type="button"
               onClick={handleScanAgain}
               className="text-xs text-[var(--on-canvas-soft)] hover:text-[var(--on-canvas)] bg-transparent border-none cursor-pointer"
             >
@@ -543,6 +751,7 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
             </button>
 
             <button
+              type="button"
               onClick={() => executeClassificationOnBox(initialBox)}
               className="bg-[var(--soga)] hover:bg-[var(--soga-deep)] text-white text-xs font-semibold px-5 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer border-none shadow-sm"
             >
@@ -569,6 +778,8 @@ export const FabricScanner: React.FC<FabricScannerProps> = ({
         <ClassificationResults
           predictions={predictions}
           inferenceTimeMs={inferenceTimeMs}
+          executionProvider={executionProvider}
+          isOutOfDistribution={isOutOfDistribution}
           croppedThumbnail={croppedThumbnail}
           language={language}
           onScanAgain={handleScanAgain}

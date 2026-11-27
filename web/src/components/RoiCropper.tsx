@@ -13,6 +13,8 @@ interface RoiCropperProps {
   onReset: () => void;
 }
 
+const MAX_CROP_SIDE = 1024;
+
 export const RoiCropper: React.FC<RoiCropperProps> = ({
   imageSrc,
   initialBox,
@@ -22,40 +24,27 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
-  const [displaySize, setDisplaySize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [naturalSize, setNaturalSize] = useState<{
+    width: number;
+    height: number;
+  }>({ width: 0, height: 0 });
+  const [displaySize, setDisplaySize] = useState<{
+    width: number;
+    height: number;
+  }>({ width: 0, height: 0 });
 
   // Current crop box in natural image pixels
   const [box, setBox] = useState<BoundingBox>(initialBox);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<string | null>(null);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const nW = img.naturalWidth;
-    const nH = img.naturalHeight;
-    setNaturalSize({ width: nW, height: nH });
-
-    // Center crop default if initialBox has zero dimensions
-    if (!initialBox || initialBox.width === 0) {
-      const size = Math.min(nW, nH) * 0.8;
-      setBox({
-        x: Math.round((nW - size) / 2),
-        y: Math.round((nH - size) / 2),
-        width: Math.round(size),
-        height: Math.round(size),
-        confidence: 0.95,
-        label: "Batik Fabric ROI",
-      });
-    } else {
-      setBox(initialBox);
-    }
-  };
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
 
   // Update display dimensions
   const updateDisplaySize = useCallback(() => {
-    if (imgRef.current) {
+    if (imgRef.current && imgRef.current.clientWidth > 0) {
       setDisplaySize({
         width: imgRef.current.clientWidth,
         height: imgRef.current.clientHeight,
@@ -63,13 +52,46 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
     }
   }, []);
 
+  const syncFromImage = useCallback(
+    (img: HTMLImageElement) => {
+      const nW = img.naturalWidth;
+      const nH = img.naturalHeight;
+      if (nW === 0 || nH === 0) return;
+
+      setNaturalSize({ width: nW, height: nH });
+      updateDisplaySize();
+
+      if (!initialBox || initialBox.width === 0) {
+        const size = Math.min(nW, nH) * 0.8;
+        setBox({
+          x: Math.round((nW - size) / 2),
+          y: Math.round((nH - size) / 2),
+          width: Math.round(size),
+          height: Math.round(size),
+          confidence: 0.9,
+          label: "Batik Fabric ROI",
+        });
+      } else {
+        setBox(initialBox);
+      }
+    },
+    [initialBox, updateDisplaySize]
+  );
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    syncFromImage(e.currentTarget);
+  };
+
   useEffect(() => {
-    updateDisplaySize();
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      syncFromImage(imgRef.current);
+    }
     window.addEventListener("resize", updateDisplaySize);
     return () => window.removeEventListener("resize", updateDisplaySize);
-  }, [updateDisplaySize]);
+  }, [syncFromImage, updateDisplaySize]);
 
-  const scale = naturalSize.width > 0 ? displaySize.width / naturalSize.width : 1;
+  const scale =
+    naturalSize.width > 0 ? displaySize.width / naturalSize.width : 1;
 
   // Convert natural coords to display coords
   const displayBox = {
@@ -79,7 +101,10 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
     height: box.height * scale,
   };
 
-  const handleMouseDown = (e: React.MouseEvent, handle?: string) => {
+  const handlePointerDown = (
+    e: React.PointerEvent,
+    handle?: "nw" | "se"
+  ) => {
     e.preventDefault();
     if (handle) {
       setIsResizing(handle);
@@ -89,8 +114,8 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
     setDragStart({ x: e.clientX, y: e.clientY });
   };
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: PointerEvent) => {
       if (!isDragging && !isResizing) return;
       if (scale === 0) return;
 
@@ -104,17 +129,33 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
         let newH = prev.height;
 
         if (isDragging) {
-          newX = Math.max(0, Math.min(naturalSize.width - prev.width, prev.x + dx));
-          newY = Math.max(0, Math.min(naturalSize.height - prev.height, prev.y + dy));
+          newX = Math.max(
+            0,
+            Math.min(naturalSize.width - prev.width, prev.x + dx)
+          );
+          newY = Math.max(
+            0,
+            Math.min(naturalSize.height - prev.height, prev.y + dy)
+          );
         } else if (isResizing === "se") {
           const delta = Math.max(dx, dy);
-          const size = Math.max(64, Math.min(naturalSize.width - prev.x, naturalSize.height - prev.y, prev.width + delta));
+          const size = Math.max(
+            64,
+            Math.min(
+              naturalSize.width - prev.x,
+              naturalSize.height - prev.y,
+              prev.width + delta
+            )
+          );
           newW = size;
           newH = size;
         } else if (isResizing === "nw") {
           const delta = Math.min(dx, dy);
           const newSize = Math.max(64, prev.width - delta);
-          if (prev.x + prev.width - newSize >= 0 && prev.y + prev.height - newSize >= 0) {
+          if (
+            prev.x + prev.width - newSize >= 0 &&
+            prev.y + prev.height - newSize >= 0
+          ) {
             newX = prev.x + prev.width - newSize;
             newY = prev.y + prev.height - newSize;
             newW = newSize;
@@ -122,7 +163,13 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
           }
         }
 
-        return { ...prev, x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) };
+        return {
+          ...prev,
+          x: Math.round(newX),
+          y: Math.round(newY),
+          width: Math.round(newW),
+          height: Math.round(newH),
+        };
       });
 
       setDragStart({ x: e.clientX, y: e.clientY });
@@ -130,27 +177,36 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
     [isDragging, isResizing, scale, dragStart, naturalSize]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     setIsDragging(false);
     setIsResizing(null);
   }, []);
 
   useEffect(() => {
     if (isDragging || isResizing) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
+      window.addEventListener("pointercancel", handlePointerUp);
       return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
+        window.removeEventListener("pointercancel", handlePointerUp);
       };
     }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, handlePointerMove, handlePointerUp]);
 
   const handleApplyCrop = () => {
     if (!imgRef.current) return;
+    // Output at natural crop resolution capped at MAX_CROP_SIDE (never pre-downscale to 224x224)
+    const srcW = Math.max(32, Math.round(box.width));
+    const srcH = Math.max(32, Math.round(box.height));
+    const downscale = Math.min(1, MAX_CROP_SIDE / Math.max(srcW, srcH));
+    const outW = Math.max(32, Math.round(srcW * downscale));
+    const outH = Math.max(32, Math.round(srcH * downscale));
+
     const canvas = document.createElement("canvas");
-    canvas.width = 224;
-    canvas.height = 224;
+    canvas.width = outW;
+    canvas.height = outH;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -162,8 +218,8 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
       box.height,
       0,
       0,
-      224,
-      224
+      outW,
+      outH
     );
 
     onConfirmCrop(canvas);
@@ -176,7 +232,7 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
       y: Math.round((naturalSize.height - size) / 2),
       width: Math.round(size),
       height: Math.round(size),
-      confidence: 0.96,
+      confidence: initialBox.confidence,
       label: "Batik Fabric ROI",
     });
   };
@@ -200,7 +256,7 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
       {/* Interactive Image & Cropper Area */}
       <div
         ref={containerRef}
-        className="relative max-w-full max-h-[500px] overflow-hidden rounded-xl border border-stone-800 bg-stone-950 shadow-2xl select-none"
+        className="relative max-w-full max-h-[500px] overflow-hidden rounded-xl border border-stone-800 bg-stone-950 shadow-2xl select-none touch-none"
       >
         <img
           ref={imgRef}
@@ -232,28 +288,28 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
 
             {/* Draggable Crop Bounding Box */}
             <div
-              className="absolute border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.5)] cursor-move transition-shadow"
+              className="absolute border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.5)] cursor-move transition-shadow touch-none"
               style={{
                 left: `${displayBox.x}px`,
                 top: `${displayBox.y}px`,
                 width: `${displayBox.width}px`,
                 height: `${displayBox.height}px`,
               }}
-              onMouseDown={(e) => handleMouseDown(e)}
+              onPointerDown={(e) => handlePointerDown(e)}
             >
               {/* Corner handles */}
               <div
-                className="absolute -top-2 -left-2 w-4 h-4 bg-amber-400 border border-stone-950 rounded-sm cursor-nwse-resize shadow-md"
-                onMouseDown={(e) => {
+                className="absolute -top-2.5 -left-2.5 w-5 h-5 bg-amber-400 border border-stone-950 rounded-sm cursor-nwse-resize shadow-md touch-none"
+                onPointerDown={(e) => {
                   e.stopPropagation();
-                  handleMouseDown(e, "nw");
+                  handlePointerDown(e, "nw");
                 }}
               />
               <div
-                className="absolute -bottom-2 -right-2 w-4 h-4 bg-amber-400 border border-stone-950 rounded-sm cursor-nwse-resize shadow-md"
-                onMouseDown={(e) => {
+                className="absolute -bottom-2.5 -right-2.5 w-5 h-5 bg-amber-400 border border-stone-950 rounded-sm cursor-nwse-resize shadow-md touch-none"
+                onPointerDown={(e) => {
                   e.stopPropagation();
-                  handleMouseDown(e, "se");
+                  handlePointerDown(e, "se");
                 }}
               />
 
@@ -272,7 +328,7 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
 
               {/* Tag badge */}
               <div className="absolute top-1 left-1 bg-amber-600/90 text-stone-950 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
-                {box.label || "YOLO ROI"}
+                {box.label || "Fabric ROI"}
               </div>
             </div>
           </>
@@ -283,15 +339,17 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
       <div className="w-full mt-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={handleAutoCropReset}
-            className="px-3 py-2 text-xs font-medium text-stone-300 bg-stone-800 hover:bg-stone-700 rounded-lg border border-stone-700 transition flex items-center gap-1.5"
+            className="px-3 py-2 text-xs font-medium text-stone-300 bg-stone-800 hover:bg-stone-700 rounded-lg border border-stone-700 transition flex items-center gap-1.5 cursor-pointer"
           >
             <Crop className="w-3.5 h-3.5 text-amber-400" />
             <span>{t(language, "btn_auto_crop")}</span>
           </button>
           <button
+            type="button"
             onClick={onReset}
-            className="px-3 py-2 text-xs font-medium text-stone-400 hover:text-stone-200 transition flex items-center gap-1"
+            className="px-3 py-2 text-xs font-medium text-stone-400 hover:text-stone-200 transition flex items-center gap-1 cursor-pointer bg-transparent border-none"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{t(language, "btn_reset_crop")}</span>
@@ -299,8 +357,9 @@ export const RoiCropper: React.FC<RoiCropperProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={handleApplyCrop}
-          className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-stone-950 font-semibold text-sm rounded-lg shadow-lg shadow-amber-950/50 flex items-center gap-2 transition"
+          className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-stone-950 font-semibold text-sm rounded-lg shadow-lg shadow-amber-950/50 flex items-center gap-2 transition cursor-pointer border-none"
         >
           <Check className="w-4 h-4" />
           <span>{t(language, "btn_classify")}</span>

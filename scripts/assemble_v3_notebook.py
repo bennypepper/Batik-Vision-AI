@@ -42,8 +42,8 @@ def create_notebook():
             "### Major Architectural Fixes in v3:\n",
             "1. **Double-Preprocessing Bug Resolved**: Fixed the dynamic range collapse where v2 normalized images twice ($[-1.008, -0.992]$). The model now has a single internal `Rescaling(scale=1/127.5, offset=-1.0)` layer and natively receives raw $[0, 255]$ float32 pixels.\n",
             "2. **Perceptual Hash Deduplication**: Uses 64-bit dHash and Hamming distance to eliminate train/val/test data leakage from redundant duplicate images.\n",
-            "3. **Categorical Focal Loss & Effective Sample Weighting**: Replaces standard crossentropy with Focal Loss ($\gamma = 2.0$, label smoothing $= 0.1$) to prevent dominant classes from drowning out weak minority classes.\n",
-            "4. **Stratified 5-Fold Cross-Validation**: Two-phase fine-tuning (frozen backbone classification head training followed by top 40 layers unfreezing with frozen BatchNormalization).\n",
+            "3. **Calibrated Loss & Capped Class Weighting**: Defaults to label-smoothed Categorical Crossentropy (`label_smoothing=0.05`) with capped Effective Number weights (`max_weight=3.0`), plus fixed true-class `p_t` Focal Loss ($\\gamma = 2.0$).\n",
+            "4. **StratifiedGroupKFold 5-Fold Cross-Validation**: Two-phase fine-tuning (frozen backbone head training followed by top 120 layers unfreezing with cosine warmup and frozen BatchNormalization).\n",
             "5. **Zero-Backend Export**: Automatic serialization to FP16 TFLite and ONNX for client-side in-browser WebAssembly execution.",
         ],
     })

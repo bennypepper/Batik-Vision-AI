@@ -3,7 +3,7 @@
 import React from "react";
 import { ScanRecord, AppLanguage } from "@/types/batik";
 import { t } from "@/lib/i18n";
-import { getMotifRegion, getMotifIsland } from "@/lib/labels-data";
+import { getMotifBySlug, getMotifRegion, getMotifIsland } from "@/lib/labels-data";
 import { ArrowRight, Trash2, Clock } from "lucide-react";
 
 interface ScanHistoryProps {
@@ -58,7 +58,9 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
           <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-xl overflow-hidden border border-[var(--cloth-line)] shadow-sm">
             {records.map((rec, index) => {
               const top = rec.topPrediction;
-              const name = language === "id" ? top.classInfo.name_id : top.classInfo.name_en;
+              const canonicalMotif = getMotifBySlug(top.classInfo.slug);
+              if (!canonicalMotif) return null;
+              const name = language === "id" ? canonicalMotif.name_id : canonicalMotif.name_en;
               const dateStr = new Date(rec.timestamp).toLocaleString(
                 language === "id" ? "id-ID" : "en-US",
                 { dateStyle: "short", timeStyle: "short" }
@@ -72,7 +74,7 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
                   {/* Swatch Image */}
                   <div className="w-12 h-12 rounded-lg overflow-hidden border border-[var(--cloth-line)] bg-stone-900 shrink-0">
                     <img
-                      src={`/motifs/${top.classInfo.slug}.jpg`}
+                      src={`/motifs/${canonicalMotif.slug}.jpg`}
                       alt={name}
                       className="w-full h-full object-cover"
                     />
@@ -83,7 +85,7 @@ export const ScanHistory: React.FC<ScanHistoryProps> = ({
                       {name}
                     </div>
                     <div className="text-[12px] text-[var(--on-cloth-faint)] truncate mt-0.5">
-                      {dateStr} · {getMotifRegion(top.classInfo, language)} ({getMotifIsland(top.classInfo, language)})
+                      {dateStr} · {getMotifRegion(canonicalMotif, language)} ({getMotifIsland(canonicalMotif, language)})
                     </div>
                   </div>
 

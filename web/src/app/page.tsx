@@ -7,6 +7,7 @@ import { FabricScanner } from "@/components/FabricScanner";
 import { CulturalAtlas } from "@/components/CulturalAtlas";
 import { ScanHistory } from "@/components/ScanHistory";
 import { AboutSection } from "@/components/AboutSection";
+import { validateHistoryRecords } from "@/lib/classifier";
 import { t } from "@/lib/i18n";
 
 const LOCAL_STORAGE_KEY_HISTORY = "batik_v3_scan_history";
@@ -14,40 +15,55 @@ const LOCAL_STORAGE_KEY_LANG = "batik_v3_language";
 const LOCAL_STORAGE_KEY_THEME = "batik_v3_theme";
 
 export default function HomePage() {
-  const [currentTab, setCurrentTab] = useState<"scanner" | "atlas" | "history" | "about">("scanner");
+  const [currentTab, setCurrentTab] = useState<
+    "scanner" | "atlas" | "history" | "about"
+  >("scanner");
   const [language, setLanguage] = useState<AppLanguage>("en");
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [historyRecords, setHistoryRecords] = useState<ScanRecord[]>([]);
-  const [targetAtlasQuery, setTargetAtlasQuery] = useState<string | undefined>(undefined);
+  const [targetAtlasQuery, setTargetAtlasQuery] = useState<string | undefined>(
+    undefined
+  );
 
-  // Load persisted language, theme, and history on mount
+  // Hydrate persisted language, theme, and validated history after mount
   useEffect(() => {
-    try {
-      const savedLang = localStorage.getItem(LOCAL_STORAGE_KEY_LANG) as AppLanguage | null;
-      if (savedLang === "id" || savedLang === "en") {
-        setLanguage(savedLang);
-      } else {
-        setLanguage("en");
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      try {
+        const savedLang = localStorage.getItem(LOCAL_STORAGE_KEY_LANG);
+        if (savedLang === "id" || savedLang === "en") {
+          setLanguage(savedLang);
+        }
+
+        const savedTheme = localStorage.getItem(LOCAL_STORAGE_KEY_THEME);
+        if (savedTheme === "light" || savedTheme === "dark") {
+          setTheme(savedTheme);
+        }
+
+        const savedHistory = localStorage.getItem(LOCAL_STORAGE_KEY_HISTORY);
+        if (savedHistory) {
+          const parsed: unknown = JSON.parse(savedHistory);
+          setHistoryRecords(validateHistoryRecords(parsed));
+        }
+      } catch {
+        // LocalStorage access or JSON parse fallback
       }
-      const savedTheme = localStorage.getItem(LOCAL_STORAGE_KEY_THEME) as "dark" | "light" | null;
-      if (savedTheme === "light" || savedTheme === "dark") {
-        setTheme(savedTheme);
-        document.documentElement.setAttribute("data-theme", savedTheme);
-      } else {
-        setTheme("light");
-        document.documentElement.setAttribute("data-theme", "light");
-      }
-      const savedHistory = localStorage.getItem(LOCAL_STORAGE_KEY_HISTORY);
-      if (savedHistory) {
-        setHistoryRecords(JSON.parse(savedHistory));
-      }
-    } catch {
-      // LocalStorage access fallback
-    }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Sync document root attributes when language or theme changes
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [language, theme]);
 
   const handleLanguageChange = (lang: AppLanguage) => {
     setLanguage(lang);
+    document.documentElement.lang = lang;
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY_LANG, lang);
     } catch {
@@ -57,23 +73,26 @@ export default function HomePage() {
 
   const handleThemeChange = (newTheme: "dark" | "light") => {
     setTheme(newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY_THEME, newTheme);
-      document.documentElement.setAttribute("data-theme", newTheme);
     } catch {
       // LocalStorage fallback
     }
   };
 
   const handleSaveScanRecord = (recordData: {
-    thumbnail: string;
     predictions: PredictionResult[];
     inferenceTimeMs: number;
   }) => {
+    if (!recordData.predictions.length) return;
     const newRecord: ScanRecord = {
-      id: "scan_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      id:
+        "scan_" +
+        Date.now() +
+        "_" +
+        Math.random().toString(36).substring(2, 7),
       timestamp: Date.now(),
-      imageThumbnail: recordData.thumbnail,
       topPrediction: recordData.predictions[0],
       topCandidates: recordData.predictions,
       inferenceTimeMs: recordData.inferenceTimeMs,
@@ -82,9 +101,20 @@ export default function HomePage() {
     setHistoryRecords((prev) => {
       const updated = [newRecord, ...prev].slice(0, 30);
       try {
-        localStorage.setItem(LOCAL_STORAGE_KEY_HISTORY, JSON.stringify(updated));
+        localStorage.setItem(
+          LOCAL_STORAGE_KEY_HISTORY,
+          JSON.stringify(updated)
+        );
       } catch {
-        // Fallback
+        // Gracefully handle QuotaExceededError by trimming older entries
+        try {
+          localStorage.setItem(
+            LOCAL_STORAGE_KEY_HISTORY,
+            JSON.stringify(updated.slice(0, 10))
+          );
+        } catch {
+          // Storage disabled or completely full
+        }
       }
       return updated;
     });
@@ -136,6 +166,7 @@ export default function HomePage() {
 
         {currentTab === "atlas" && (
           <CulturalAtlas
+            key={targetAtlasQuery ?? "atlas-default"}
             language={language}
             initialQuery={targetAtlasQuery}
           />
@@ -151,9 +182,7 @@ export default function HomePage() {
           />
         )}
 
-        {currentTab === "about" && (
-          <AboutSection language={language} />
-        )}
+        {currentTab === "about" && <AboutSection language={language} />}
       </main>
 
       {/* Clean Full-Width Footer */}

@@ -1,7 +1,7 @@
-import json
 import os
-import pytest
+
 from scripts.generate_labels_registry import build_labels_registry
+
 
 def test_labels_registry_structure(tmp_path):
     output_json = tmp_path / "labels.json"

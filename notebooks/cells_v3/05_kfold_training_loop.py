@@ -1,28 +1,34 @@
-"""Cell 5: Stratified 5-Fold cross-validation training loop with two-phase fine-tuning."""
+"""Cell 5: StratifiedGroupKFold 5-Fold training loop with cosine warmup and safe checkpointing."""
 
 import gc
+import math
 import os
+import shutil
+
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.metrics import TopKCategoricalAccuracy
+from tensorflow.keras.optimizers import Adam
 
 fold_records = []
 best_overall_val_acc = 0.0
 best_overall_model_path = MODEL_PATH
 
-for fold, (train_idx, val_idx) in enumerate(skf.split(X_trainval, y_trainval)):
-    print(f"\n{'='*65}")
-    print(f"  STARTING STRATIFIED FOLD {fold + 1} / {N_FOLDS}")
-    print(f"{'='*65}")
+for fold, (train_idx, val_idx) in enumerate(skf.split(X_trainval, y_trainval, groups=g_trainval)):
+    print(f"\n{'=' * 65}")
+    print(f"  STARTING STRATIFIED GROUP FOLD {fold + 1} / {N_FOLDS}")
+    print(f"{'=' * 65}")
 
     X_tr, X_val = X_trainval[train_idx], X_trainval[val_idx]
     y_tr, y_val = y_trainval[train_idx], y_trainval[val_idx]
 
-    # Compute effective sample weights for current fold
-    tr_counts = [np.sum(y_tr == c) for c in range(NUM_CLASSES)]
-    class_weights_arr = compute_effective_sample_weights(tr_counts, beta=EFFECTIVE_BETA)
+    tr_counts = [int(np.sum(y_tr == c)) for c in range(NUM_CLASSES)]
+    class_weights_arr = compute_effective_sample_weights(
+        tr_counts,
+        beta=EFFECTIVE_BETA,
+        max_weight=MAX_CLASS_WEIGHT,
+    )
     fold_class_weights = dict(enumerate(class_weights_arr))
 
     train_ds_fold = build_dataset(X_tr, y_tr, tf_augment_train, BATCH_SIZE, shuffle=True)
@@ -32,8 +38,11 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X_trainval, y_trainval)):
 
     # Phase 1: Train classification head with frozen backbone
     base_model.trainable = False
-
-    loss_fn = CategoricalFocalLoss(gamma=FOCAL_GAMMA, label_smoothing=LABEL_SMOOTHING)
+    loss_fn = build_classification_loss(
+        mode=LOSS_MODE,
+        label_smoothing=LABEL_SMOOTHING,
+        gamma=FOCAL_GAMMA,
+    )
 
     model.compile(
         optimizer=Adam(learning_rate=PHASE1_LR),
@@ -42,7 +51,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X_trainval, y_trainval)):
     )
 
     print(f"  [Fold {fold + 1}] Phase 1: Training classification head ({PHASE1_EPOCHS} epochs max)...")
-    history_p1 = model.fit(
+    model.fit(
         train_ds_fold,
         validation_data=val_ds_fold,
         epochs=PHASE1_EPOCHS,
@@ -54,7 +63,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X_trainval, y_trainval)):
         verbose=1,
     )
 
-    # Phase 2: Unfreeze top N layers; keep all BatchNorm layers frozen
+    # Phase 2: Unfreeze top UNFREEZE_LAYERS (120); keep all BatchNorm layers frozen
     base_model.trainable = True
     for layer in base_model.layers[:-UNFREEZE_LAYERS]:
         layer.trainable = False
@@ -63,14 +72,23 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X_trainval, y_trainval)):
             layer.trainable = False
 
     fold_ckpt_path = os.path.join(OUTPUT_DIR, f"fold_{fold + 1}_best.keras")
+    steps_per_epoch = max(1, math.ceil(len(X_tr) / BATCH_SIZE))
+    total_p2_steps = steps_per_epoch * PHASE2_EPOCHS
+    warmup_p2_steps = max(1, int(0.1 * total_p2_steps))
+    p2_schedule = CosineWarmupSchedule(
+        initial_lr=PHASE2_LR,
+        total_steps=total_p2_steps,
+        warmup_steps=warmup_p2_steps,
+        min_lr=MIN_LR,
+    )
 
     model.compile(
-        optimizer=Adam(learning_rate=PHASE2_LR),
+        optimizer=Adam(learning_rate=p2_schedule),
         loss=loss_fn,
         metrics=["accuracy", TopKCategoricalAccuracy(k=3, name="top3_accuracy")],
     )
 
-    print(f"  [Fold {fold + 1}] Phase 2: Fine-tuning last {UNFREEZE_LAYERS} layers ({PHASE2_EPOCHS} epochs max)...")
+    print(f"  [Fold {fold + 1}] Phase 2: Fine-tuning last {UNFREEZE_LAYERS} layers with cosine warmup ({PHASE2_EPOCHS} epochs max)...")
     history_p2 = model.fit(
         train_ds_fold,
         validation_data=val_ds_fold,
@@ -78,26 +96,26 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X_trainval, y_trainval)):
         callbacks=[
             ModelCheckpoint(filepath=fold_ckpt_path, monitor="val_accuracy", save_best_only=True, mode="max", verbose=0),
             EarlyStopping(monitor="val_accuracy", patience=PHASE2_PATIENCE, restore_best_weights=True, verbose=0, mode="max"),
-            ReduceLROnPlateau(monitor="val_loss", factor=REDUCE_LR_FACTOR, patience=REDUCE_LR_PATIENCE, min_lr=MIN_LR, verbose=0),
         ],
         class_weight=fold_class_weights,
         verbose=1,
     )
 
-    best_val_acc = max(history_p2.history["val_accuracy"])
-    best_val_top3 = max(history_p2.history["val_top3_accuracy"])
+    fold_best_val_acc = max(history_p2.history["val_accuracy"])
+    fold_best_val_top3 = max(history_p2.history["val_top3_accuracy"])
 
-    if best_val_acc > best_overall_val_acc:
-        best_overall_val_acc = best_val_acc
-        model.save(best_overall_model_path)
-        print(f"  --> New overall best model saved: val_acc = {best_val_acc:.4f}")
+    # CRITICAL FIX (P1-3): Copy best checkpoint artifact instead of saving final epoch weights
+    if fold_best_val_acc > best_overall_val_acc:
+        best_overall_val_acc = fold_best_val_acc
+        shutil.copy2(fold_ckpt_path, best_overall_model_path)
+        print(f"  --> New overall best checkpoint copied: val_acc = {fold_best_val_acc:.4f}")
 
     fold_records.append({
         "fold": fold + 1,
-        "val_accuracy": float(best_val_acc),
-        "val_top3_accuracy": float(best_val_top3),
+        "val_accuracy": float(fold_best_val_acc),
+        "val_top3_accuracy": float(fold_best_val_top3),
     })
-    print(f"  Fold {fold + 1} Results -> Val Acc: {best_val_acc:.4f} | Val Top-3: {best_val_top3:.4f}")
+    print(f"  Fold {fold + 1} Results -> Val Acc: {fold_best_val_acc:.4f} | Val Top-3: {fold_best_val_top3:.4f}")
 
     del model, base_model, train_ds_fold, val_ds_fold
     tf.keras.backend.clear_session()

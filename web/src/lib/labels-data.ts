@@ -1,7 +1,13 @@
 import rawLabels from "@/data/labels.json";
 import { BatikClass, AppLanguage } from "@/types/batik";
 
-export const MOTIFS: BatikClass[] = ((rawLabels as any).classes || rawLabels) as BatikClass[];
+interface RawLabelsFile {
+  classes?: BatikClass[];
+}
+
+export const MOTIFS: BatikClass[] = Array.isArray(rawLabels)
+  ? (rawLabels as BatikClass[])
+  : ((rawLabels as RawLabelsFile).classes ?? []);
 
 export function getAllMotifs(): BatikClass[] {
   return MOTIFS;

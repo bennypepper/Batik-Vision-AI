@@ -152,11 +152,3 @@ body {
 .flash {
   animation: flashcard 1.4s ease;
 }
-
-/* Suppress dev indicators and route announcers to eliminate floating bubble artifacts */
-[data-nextjs-toast],
-nextjs-portal,
-#__next-build-watcher,
-#nextjs-dev-indicator {
-  display: none !important;
-}

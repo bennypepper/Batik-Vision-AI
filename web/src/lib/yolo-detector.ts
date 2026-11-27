@@ -1,17 +1,71 @@
 import { BoundingBox } from "@/types/batik";
 
+export type FabricLocalizationMethod = "adaptive-saliency" | "onnx-segmentation";
+
 export interface FabricDetectionResult extends BoundingBox {
   framingMode: "swatch" | "center";
+  method: FabricLocalizationMethod;
   presets: {
     swatch: BoundingBox;
     center: BoundingBox;
+    adaptive: BoundingBox;
   };
 }
+
+const CANONICAL_MAX_SIDE = 256;
+const GRID_SIZE = 6;
 
 export async function detectFabricRegion(
   canvas: HTMLCanvasElement
 ): Promise<FabricDetectionResult> {
-  return computeAdaptiveFabricSaliency(canvas);
+  const origW = canvas.width;
+  const origH = canvas.height;
+  const presets = getFabricPresets(origW, origH);
+
+  if (origW < 20 || origH < 20) {
+    const fallbackBox: BoundingBox = {
+      ...presets.swatch,
+      confidence: 0.5,
+      label: "Full Fabric Swatch",
+    };
+    return {
+      ...fallbackBox,
+      framingMode: "swatch",
+      method: "adaptive-saliency",
+      presets: { ...presets, adaptive: fallbackBox },
+    };
+  }
+
+  try {
+    // Downscale to resolution-normalized 256px canonical grid for invariant saliency
+    const scale = Math.min(1, CANONICAL_MAX_SIDE / Math.max(origW, origH));
+    const sw = Math.max(24, Math.round(origW * scale));
+    const sh = Math.max(24, Math.round(origH * scale));
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width = sw;
+    offscreen.height = sh;
+    const ctx = offscreen.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      return {
+        ...presets.swatch,
+        framingMode: "swatch",
+        method: "adaptive-saliency",
+        presets: { ...presets, adaptive: presets.swatch },
+      };
+    }
+
+    ctx.drawImage(canvas, 0, 0, sw, sh);
+    const imgData = ctx.getImageData(0, 0, sw, sh);
+    return computeAdaptiveSaliencyFromPixels(imgData.data, sw, sh, origW, origH);
+  } catch {
+    return {
+      ...presets.swatch,
+      framingMode: "swatch",
+      method: "adaptive-saliency",
+      presets: { ...presets, adaptive: presets.swatch },
+    };
+  }
 }
 
 export function getFabricPresets(
@@ -26,14 +80,14 @@ export function getFabricPresets(
     y: swatchMarginY,
     width: Math.max(20, w - swatchMarginX * 2),
     height: Math.max(20, h - swatchMarginY * 2),
-    confidence: 0.95,
+    confidence: 1.0,
     label: "Full Fabric Swatch",
   };
 
-  // Center focus preset: 52% square focused on chest/torso motif area
-  const centerSize = Math.max(20, Math.round(Math.min(w, h) * 0.52));
+  // Center focus preset: 50% square focused on torso/garment motif area
+  const centerSize = Math.max(20, Math.round(Math.min(w, h) * 0.5));
   const centerX = Math.round((w - centerSize) / 2);
-  let centerY = Math.round(h * 0.54 - centerSize / 2);
+  let centerY = Math.round(h * 0.52 - centerSize / 2);
   centerY = Math.max(0, Math.min(h - centerSize, centerY));
 
   const centerBox: BoundingBox = {
@@ -41,143 +95,250 @@ export function getFabricPresets(
     y: Math.max(0, centerY),
     width: centerSize,
     height: centerSize,
-    confidence: 0.92,
+    confidence: 1.0,
     label: "Garment Motif Focus",
   };
 
   return { swatch: swatchBox, center: centerBox };
 }
 
-function computeAdaptiveFabricSaliency(
-  canvas: HTMLCanvasElement
+/**
+ * Resolution-normalized 6x6 grid Laplacian texture energy localizer.
+ * Pure pixel-array helper so it can be unit-tested deterministically in Node/Vitest.
+ */
+export function computeAdaptiveSaliencyFromPixels(
+  rgba: Uint8ClampedArray,
+  w: number,
+  h: number,
+  origW: number = w,
+  origH: number = h
 ): FabricDetectionResult {
-  const w = canvas.width;
-  const h = canvas.height;
-  const presets = getFabricPresets(w, h);
+  const presets = getFabricPresets(origW, origH);
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx || w < 20 || h < 20) {
+  if (w < 12 || h < 12 || rgba.length < w * h * 4) {
+    const fallback: BoundingBox = { ...presets.swatch, confidence: 0.5 };
     return {
-      ...presets.swatch,
+      ...fallback,
       framingMode: "swatch",
-      presets,
+      method: "adaptive-saliency",
+      presets: { ...presets, adaptive: fallback },
     };
   }
 
-  try {
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const data = imgData.data;
+  // Convert RGBA to grayscale luminance
+  const gray = new Float32Array(w * h);
+  for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+    gray[i] = 0.299 * rgba[p] + 0.587 * rgba[p + 1] + 0.114 * rgba[p + 2];
+  }
 
-    const lumaAt = (px: number, py: number): number => {
-      const cx = Math.max(0, Math.min(w - 1, px));
-      const cy = Math.max(0, Math.min(h - 1, py));
-      const idx = (cy * w + cx) * 4;
-      return 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-    };
+  // Compute 6x6 grid of Laplacian texture energy + luma std
+  const cellEnergy = new Float32Array(GRID_SIZE * GRID_SIZE);
+  const cellW = w / GRID_SIZE;
+  const cellH = h / GRID_SIZE;
 
-    // Sample perimeter borders (outer 6%) and center 50% region
-    const bw = Math.max(2, Math.round(w * 0.06));
-    const bh = Math.max(2, Math.round(h * 0.06));
-    const step = Math.max(1, Math.floor(Math.min(w, h) / 100));
+  for (let gy = 0; gy < GRID_SIZE; gy++) {
+    const yStart = Math.max(1, Math.floor(gy * cellH));
+    const yEnd = Math.min(h - 1, Math.ceil((gy + 1) * cellH));
 
-    const borderGradients: number[] = [];
-    const borderLumas: number[] = [];
-    const centerGradients: number[] = [];
-    const centerLumas: number[] = [];
+    for (let gx = 0; gx < GRID_SIZE; gx++) {
+      const xStart = Math.max(1, Math.floor(gx * cellW));
+      const xEnd = Math.min(w - 1, Math.ceil((gx + 1) * cellW));
 
-    // 1. Top and Bottom border strips
-    for (let y = 0; y < bh; y += step) {
-      for (let x = 0; x < w; x += step) {
-        // Top
-        const lumaT = lumaAt(x, y);
-        borderLumas.push(lumaT);
-        const gxT = Math.abs(lumaAt(x + 1, y) - lumaAt(x - 1, y));
-        const gyT = Math.abs(lumaAt(x, y + 1) - lumaAt(x, y - 1));
-        borderGradients.push(gxT + gyT);
+      let lapSum = 0;
+      let lumaSum = 0;
+      let lumaSqSum = 0;
+      let count = 0;
 
-        // Bottom
-        const yB = h - 1 - y;
-        const lumaB = lumaAt(x, yB);
-        borderLumas.push(lumaB);
-        const gxB = Math.abs(lumaAt(x + 1, yB) - lumaAt(x - 1, yB));
-        const gyB = Math.abs(lumaAt(x, yB + 1) - lumaAt(x, yB - 1));
-        borderGradients.push(gxB + gyB);
+      for (let y = yStart; y < yEnd; y++) {
+        const rowOffset = y * w;
+        for (let x = xStart; x < xEnd; x++) {
+          const idx = rowOffset + x;
+          const c = gray[idx];
+          const lap = Math.abs(
+            4 * c -
+              gray[idx - 1] -
+              gray[idx + 1] -
+              gray[idx - w] -
+              gray[idx + w]
+          );
+          lapSum += lap;
+          lumaSum += c;
+          lumaSqSum += c * c;
+          count++;
+        }
+      }
+
+      if (count > 0) {
+        const meanLap = lapSum / count;
+        const meanLuma = lumaSum / count;
+        const variance = Math.max(0, lumaSqSum / count - meanLuma * meanLuma);
+        const stdLuma = Math.sqrt(variance);
+        cellEnergy[gy * GRID_SIZE + gx] = meanLap + 0.4 * stdLuma;
       }
     }
+  }
 
-    // 2. Left and Right border strips
-    for (let x = 0; x < bw; x += step) {
-      for (let y = bh; y < h - bh; y += step) {
-        // Left
-        const lumaL = lumaAt(x, y);
-        borderLumas.push(lumaL);
-        const gxL = Math.abs(lumaAt(x + 1, y) - lumaAt(x - 1, y));
-        const gyL = Math.abs(lumaAt(x, y + 1) - lumaAt(x, y - 1));
-        borderGradients.push(gxL + gyL);
+  let maxEnergy = 0;
+  let totalEnergy = 0;
+  let borderEnergySum = 0;
+  let borderCount = 0;
 
-        // Right
-        const xR = w - 1 - x;
-        const lumaR = lumaAt(xR, y);
-        borderLumas.push(lumaR);
-        const gxR = Math.abs(lumaAt(xR + 1, y) - lumaAt(xR - 1, y));
-        const gyR = Math.abs(lumaAt(xR, y + 1) - lumaAt(xR, y - 1));
-        borderGradients.push(gxR + gyR);
+  for (let gy = 0; gy < GRID_SIZE; gy++) {
+    for (let gx = 0; gx < GRID_SIZE; gx++) {
+      const e = cellEnergy[gy * GRID_SIZE + gx];
+      totalEnergy += e;
+      if (e > maxEnergy) maxEnergy = e;
+      if (
+        gx === 0 ||
+        gx === GRID_SIZE - 1 ||
+        gy === 0 ||
+        gy === GRID_SIZE - 1
+      ) {
+        borderEnergySum += e;
+        borderCount++;
       }
     }
+  }
 
-    // 3. Center 50% region
-    const cStartX = Math.round(w * 0.25);
-    const cEndX = Math.round(w * 0.75);
-    const cStartY = Math.round(h * 0.25);
-    const cEndY = Math.round(h * 0.75);
+  const meanAllEnergy = totalEnergy / (GRID_SIZE * GRID_SIZE);
+  const meanBorderEnergy = borderCount > 0 ? borderEnergySum / borderCount : 0;
 
-    for (let y = cStartY; y < cEndY; y += step * 2) {
-      for (let x = cStartX; x < cEndX; x += step * 2) {
-        const lumaC = lumaAt(x, y);
-        centerLumas.push(lumaC);
-        const gxC = Math.abs(lumaAt(x + 1, y) - lumaAt(x - 1, y));
-        const gyC = Math.abs(lumaAt(x, y + 1) - lumaAt(x, y - 1));
-        centerGradients.push(gxC + gyC);
-      }
-    }
+  // Flat edge-to-edge swatch: high texture energy continues across the outer border ring
+  const isFullSwatch =
+    maxEnergy < 4.0 ||
+    (meanBorderEnergy >= maxEnergy * 0.52 && meanBorderEnergy >= 10.0);
 
-    const calcMean = (arr: number[]): number => {
-      if (arr.length === 0) return 0;
-      return arr.reduce((acc, v) => acc + v, 0) / arr.length;
-    };
-
-    const calcStd = (arr: number[]): number => {
-      if (arr.length === 0) return 0;
-      const mean = calcMean(arr);
-      const variance = arr.reduce((acc, v) => acc + (v - mean) ** 2, 0) / arr.length;
-      return Math.sqrt(variance);
-    };
-
-    const meanBorderGrad = calcMean(borderGradients);
-    const borderStd = calcStd(borderLumas);
-    const centerStd = calcStd(centerLumas);
-    const varianceRatio = borderStd / Math.max(1.0, centerStd);
-
-    // Decision:
-    // A scene/garment photo (mannequin, model, studio shot) has a dead, uniform backdrop
-    // with virtually no border edge gradients (< 6.5) and low border-to-center variance ratio (< 0.42).
-    // An edge-to-edge fabric swatch (regardless of whether dark latar ireng or light mori ground)
-    // has continuous wax canting lines and pattern transitions crossing the borders.
-    const isGarment = (meanBorderGrad < 6.5) || (varianceRatio < 0.42 && meanBorderGrad < 11.0);
-    const framingMode: "swatch" | "center" = isGarment ? "center" : "swatch";
-    const chosenBox = isGarment ? presets.center : presets.swatch;
-
-    return {
-      ...chosenBox,
-      framingMode,
-      presets,
-    };
-  } catch {
-    // Graceful fallback to full swatch preset
-    return {
+  if (isFullSwatch) {
+    const computedScore = clamp(
+      0.5 + Math.min(0.46, meanAllEnergy / 140),
+      0.25,
+      0.96
+    );
+    const adaptiveSwatch: BoundingBox = {
       ...presets.swatch,
+      confidence: Number(computedScore.toFixed(2)),
+      label: "Full Fabric Swatch",
+    };
+    return {
+      ...adaptiveSwatch,
       framingMode: "swatch",
-      presets,
+      method: "adaptive-saliency",
+      presets: {
+        ...presets,
+        adaptive: adaptiveSwatch,
+      },
     };
   }
+
+  // Garment / off-center fabric: find highest-energy contiguous 4-connected region
+  const activeThreshold = Math.max(6.0, maxEnergy * 0.35);
+  const visited = new Uint8Array(GRID_SIZE * GRID_SIZE);
+  let bestComponent: number[] = [];
+  let bestComponentEnergy = -1;
+
+  for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+    if (visited[i] || cellEnergy[i] < activeThreshold) continue;
+    const queue = [i];
+    visited[i] = 1;
+    const component: number[] = [];
+    let compEnergy = 0;
+
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      component.push(curr);
+      compEnergy += cellEnergy[curr];
+      const cx = curr % GRID_SIZE;
+      const cy = Math.floor(curr / GRID_SIZE);
+
+      const neighbors = [
+        [cx - 1, cy],
+        [cx + 1, cy],
+        [cx, cy - 1],
+        [cx, cy + 1],
+      ];
+      for (const [nx, ny] of neighbors) {
+        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+          const nIdx = ny * GRID_SIZE + nx;
+          if (!visited[nIdx] && cellEnergy[nIdx] >= activeThreshold) {
+            visited[nIdx] = 1;
+            queue.push(nIdx);
+          }
+        }
+      }
+    }
+
+    if (compEnergy > bestComponentEnergy) {
+      bestComponentEnergy = compEnergy;
+      bestComponent = component;
+    }
+  }
+
+  if (bestComponent.length === 0) {
+    const fallbackCenter: BoundingBox = {
+      ...presets.center,
+      confidence: 0.45,
+    };
+    return {
+      ...fallbackCenter,
+      framingMode: "center",
+      method: "adaptive-saliency",
+      presets: {
+        ...presets,
+        adaptive: fallbackCenter,
+      },
+    };
+  }
+
+  let minGx = GRID_SIZE;
+  let maxGx = 0;
+  let minGy = GRID_SIZE;
+  let maxGy = 0;
+  for (const idx of bestComponent) {
+    const gx = idx % GRID_SIZE;
+    const gy = Math.floor(idx / GRID_SIZE);
+    if (gx < minGx) minGx = gx;
+    if (gx > maxGx) maxGx = gx;
+    if (gy < minGy) minGy = gy;
+    if (gy > maxGy) maxGy = gy;
+  }
+
+  const rawX = Math.floor((minGx / GRID_SIZE) * origW);
+  const rawY = Math.floor((minGy / GRID_SIZE) * origH);
+  const rawX2 = Math.ceil(((maxGx + 1) / GRID_SIZE) * origW);
+  const rawY2 = Math.ceil(((maxGy + 1) / GRID_SIZE) * origH);
+
+  const x = clamp(rawX, 0, Math.max(0, origW - 32));
+  const y = clamp(rawY, 0, Math.max(0, origH - 32));
+  const width = clamp(rawX2 - x, Math.min(64, origW - x), origW - x);
+  const height = clamp(rawY2 - y, Math.min(64, origH - y), origH - y);
+
+  const compMean = bestComponentEnergy / bestComponent.length;
+  const bgCells = GRID_SIZE * GRID_SIZE - bestComponent.length;
+  const bgMean =
+    bgCells > 0 ? Math.max(0, (totalEnergy - bestComponentEnergy) / bgCells) : 0;
+  const contrast = (compMean - bgMean) / Math.max(1, compMean);
+  const confidence = Number(clamp(0.4 + contrast * 0.55, 0.35, 0.96).toFixed(2));
+
+  const adaptiveBox: BoundingBox = {
+    x,
+    y,
+    width,
+    height,
+    confidence,
+    label: "Adaptive Fabric ROI",
+  };
+
+  return {
+    ...adaptiveBox,
+    framingMode: "center",
+    method: "adaptive-saliency",
+    presets: {
+      ...presets,
+      adaptive: adaptiveBox,
+    },
+  };
+}
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
 }
