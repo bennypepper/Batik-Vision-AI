@@ -24,38 +24,35 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
   const islandOptions = useMemo(() => getIslandOptions(language), [language]);
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
-  // Sync initial query when navigated from Scanner or History
+  // Scroll and flash matching motif when navigated from Scanner or History
   useEffect(() => {
-    if (initialQuery) {
-      setSearchQuery(initialQuery);
-      setSelectedIsland("ALL");
+    if (!initialQuery) return;
 
-      const match = allMotifs.find(
-        (m) =>
-          m.name_id.toLowerCase().includes(initialQuery.toLowerCase()) ||
-          m.name_en.toLowerCase().includes(initialQuery.toLowerCase()) ||
-          m.slug.toLowerCase().includes(initialQuery.toLowerCase())
-      );
+    const match = allMotifs.find(
+      (m) =>
+        m.name_id.toLowerCase().includes(initialQuery.toLowerCase()) ||
+        m.name_en.toLowerCase().includes(initialQuery.toLowerCase()) ||
+        m.slug.toLowerCase().includes(initialQuery.toLowerCase())
+    );
 
-      if (match) {
-        setFlashedId(match.id);
-        const timer = setTimeout(() => {
-          const el = cardRefs.current[match.id];
-          if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
-          }
-        }, 100);
+    if (!match) return;
 
-        const clearFlashTimer = setTimeout(() => {
-          setFlashedId(null);
-        }, 2200);
-
-        return () => {
-          clearTimeout(timer);
-          clearTimeout(clearFlashTimer);
-        };
+    const timer = setTimeout(() => {
+      setFlashedId(match.id);
+      const el = cardRefs.current[match.id];
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-    }
+    }, 100);
+
+    const clearFlashTimer = setTimeout(() => {
+      setFlashedId(null);
+    }, 2200);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(clearFlashTimer);
+    };
   }, [initialQuery, allMotifs]);
 
   // Close contemplation modal on Escape key press
@@ -177,9 +174,8 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
 
           // Curatorial rarity: Lasem is genuine cultural rarity
           const isCulturallyRare = motif.slug === "Lasem";
-          // Model weakness: Priangan Merak Ngibing and Sogan
-          const isModelWeak =
-            motif.slug === "Priangan_Merak_Ngibing" || motif.slug === "Sogan";
+          // Model weakness driven from labels.json metadata
+          const isModelWeak = Boolean(motif.is_weak_class);
 
           return (
             <div
@@ -274,6 +270,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
           className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
           role="dialog"
           aria-modal="true"
+          aria-labelledby="atlas-modal-title"
         >
           <div className="bg-[var(--cloth)] text-[var(--on-cloth)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[var(--cloth-line)] flex flex-col">
             {/* Modal Image Header */}
@@ -301,7 +298,10 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
             <div className="p-6 sm:p-7 space-y-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="display text-2xl sm:text-3xl font-bold text-[var(--on-cloth)] mb-1.5">
+                  <h2
+                    id="atlas-modal-title"
+                    className="display text-2xl sm:text-3xl font-bold text-[var(--on-cloth)] mb-1.5"
+                  >
                     {language === "id" ? selectedModalMotif.name_id : selectedModalMotif.name_en}
                   </h2>
                   <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--on-cloth-faint)]">
@@ -329,8 +329,7 @@ export const CulturalAtlas: React.FC<CulturalAtlasProps> = ({
                 </p>
               </div>
 
-              {(selectedModalMotif.slug === "Priangan_Merak_Ngibing" ||
-                selectedModalMotif.slug === "Sogan") && (
+              {selectedModalMotif.is_weak_class && (
                 <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{t(language, "model_weak_note")}</span>

@@ -26,8 +26,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="w-full bg-[var(--canvas-deep)] border-b border-[var(--canvas-line)] transition-colors">
       <div className="w-full px-4 sm:px-8 lg:px-12 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Brand */}
-        <div
-          className="flex items-baseline gap-2.5 cursor-pointer select-none"
+        <button
+          type="button"
+          className="flex items-baseline gap-2.5 cursor-pointer select-none bg-transparent border-none p-0 text-left"
           onClick={() => onTabChange("scanner")}
         >
           <span className="display text-lg font-semibold italic text-[var(--on-canvas)]">
@@ -39,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="hidden lg:inline text-[11.5px] text-[var(--on-canvas-faint)] pl-3.5 border-l border-[var(--canvas-line-strong)]">
             {t(language, "app_subtitle")}
           </span>
-        </div>
+        </button>
 
         {/* Navigation Tabs and Language Switch */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">

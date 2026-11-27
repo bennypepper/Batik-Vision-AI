@@ -30,12 +30,30 @@ export interface PredictionResult {
   classInfo: BatikClass;
 }
 
+export type ExecutionProvider = "webgpu" | "webgl" | "wasm";
+
+export interface ModelCalibrationConfig {
+  input_size: number;
+  temperature: number;
+  ood_entropy_threshold: number;
+  ood_min_confidence: number;
+}
+
+export interface InferenceResult {
+  predictions: PredictionResult[];
+  inferenceTimeMs: number;
+  executionProvider: ExecutionProvider;
+  isOutOfDistribution: boolean;
+  normalizedEntropy: number;
+  topConfidence: number;
+}
+
 export type AppLanguage = "id" | "en";
 
 export interface ScanRecord {
   id: string;
   timestamp: number;
-  imageThumbnail: string;
+  imageThumbnail?: string;
   topPrediction: PredictionResult;
   topCandidates: PredictionResult[];
   inferenceTimeMs: number;
